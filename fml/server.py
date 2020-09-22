@@ -5,7 +5,6 @@ from flask_api.request import APIRequest
 
 from flask_sqlalchemy_session import flask_scoped_session
 
-from sqlalchemy import or_, and_, not_
 from sqlalchemy.orm import Session
 
 from hardcandy.schema import DeserializationError
@@ -73,6 +72,16 @@ def alarms_history():
     }
 
 
+@server_app.route('/alarms/cancel/<int:pk>/', methods = ['POST'])
+def cancel_alarm(pk: int):
+    alarm = MANAGER.cancel(pk, session)
+
+    if alarm is None:
+        return 'no such alarm', status.HTTP_404_NOT_FOUND
+
+    return AlarmSchema().serialize(alarm)
+
+
 @server_app.route('/alarms/cancel/', methods = ['POST'])
 def cancel_alarms():
     schema = AlarmSchema()
@@ -81,6 +90,6 @@ def cancel_alarms():
         'alarms': [
             schema.serialize(alarm)
             for alarm in
-            MANAGER.cancel_all()
+            MANAGER.cancel_all(session)
         ]
     }

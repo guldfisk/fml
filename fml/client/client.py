@@ -53,6 +53,14 @@ class Client(object):
             )
         )
 
+    def cancel_alarm(self, alarm_id: int) -> models.Alarm:
+        return models.Alarm.from_remote(
+            self._make_request(
+                'alarms/cancel/{}/'.format(alarm_id),
+                'POST',
+            )
+        )
+
     def active_alarms(self) -> t.Sequence[models.Alarm]:
         return [
             models.Alarm.from_remote(alarm)
@@ -133,9 +141,18 @@ def list_alarms(args: argparse.Namespace):
     )
 
 
-def cancel_all(args: argparse.Namespace):
-    for alarm in Client().cancel_all_alarms():
-        print_alarm(alarm)
+def cancel(args: argparse.Namespace):
+    if args.target == 'all':
+        print_alarms(
+            Client().cancel_all_alarms()
+        )
+    else:
+        try:
+            alarm_id = int(args.target)
+        except ValueError:
+            print('invalid target')
+            return
+        print_alarm(Client().cancel_alarm(alarm_id))
 
 
 def invoke():
@@ -186,8 +203,13 @@ def invoke():
     )
     parser_list.set_defaults(command = list_alarms)
 
-    parser_list = subparsers.add_parser('cancel_all')
-    parser_list.set_defaults(command = cancel_all)
+    parser_list = subparsers.add_parser('cancel')
+    parser_list.add_argument(
+        'target',
+        action = 'store',
+        type = str,
+    )
+    parser_list.set_defaults(command = cancel)
 
     args = parser.parse_args()
 

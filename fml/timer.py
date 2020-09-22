@@ -88,14 +88,32 @@ class AlarmManager(object):
         for alarm_id in Alarm.active_alarms(session, target = Alarm.id).all():
             self.handle_alarm(alarm_id)
 
-    def cancel_all(self) -> t.Sequence[Alarm]:
-        session: Session = ScopedSession()
+    def cancel(self, alarm_id: int, session: Session) -> t.Optional[Alarm]:
+        alarm = session.query(Alarm).get(alarm_id)
+
+        if alarm is None:
+            return
+
+        with self._lock:
+            alarm_worker = self._alarm_map.get(alarm_id)
+        if alarm_worker:
+            self._alarm_map[alarm_id].cancel()
+            del self._alarm_map[alarm_id]
+        alarm.canceled = True
+        alarm.success = False
+
+        session.commit()
+
+        return alarm
+
+    def cancel_all(self, session: Session) -> t.Sequence[Alarm]:
         alarms = Alarm.active_alarms(session).all()
         for alarm in alarms:
             with self._lock:
                 alarm_worker = self._alarm_map.get(alarm.id)
             if alarm_worker:
                 self._alarm_map[alarm.id].cancel()
+                del self._alarm_map[alarm.id]
             alarm.canceled = True
             alarm.success = False
 
