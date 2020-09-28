@@ -44,7 +44,7 @@ def create_alarm():
 
 @server_app.route('/alarms/', methods = ['GET'])
 def view_alarms():
-    alarms = models.Alarm.active_alarms(session).order_by(models.Alarm.started_at.desc()).all()
+    alarms = models.Alarm.active_alarms(session).order_by(models.Alarm.end_at).all()
 
     schema = AlarmSchema()
 

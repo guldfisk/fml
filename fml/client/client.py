@@ -7,7 +7,7 @@ import requests
 from texttable import Texttable
 
 from fml.client import models
-from fml.client.models import DATETIME_FORMAT
+from fml.client.dateparse import parse_datetime, DateParseException
 
 
 class Client(object):
@@ -114,21 +114,24 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
 
 
 def new(args: argparse.Namespace):
+    if args.absolute is None:
+        target = datetime.datetime.now(
+        ) + datetime.timedelta(
+            seconds = args.seconds,
+            minutes = args.minutes,
+            hours = args.hours,
+        )
+    else:
+        try:
+            target = parse_datetime(args.absolute)
+        except DateParseException:
+            print('invalid datetime format "{}"'.format(args.absolute))
+            return
+
     print_alarm(
         Client().new_alarm(
             args.text,
-            (
-                datetime.datetime.now() +
-                datetime.timedelta(
-                    seconds = args.seconds,
-                    minutes = args.minutes,
-                    hours = args.hours,
-                )
-            ) if args.absolute is None else
-            datetime.datetime.strptime(
-                args.absolute,
-                DATETIME_FORMAT,
-            ),
+            end_at = target,
             mail = args.mail,
             silent = args.silent,
         )
