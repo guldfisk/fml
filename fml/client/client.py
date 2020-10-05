@@ -38,7 +38,15 @@ class Client(object):
         response.raise_for_status()
         return response.json()
 
-    def new_alarm(self, text: str, end_at: datetime.datetime, mail: bool = False, silent: bool = False) -> models.Alarm:
+    def new_alarm(
+        self,
+        text: str,
+        end_at: datetime.datetime,
+        mail: bool = False,
+        silent: bool = False,
+        requires_acknowledgment: bool = False,
+        retry_delay: int = 60,
+    ) -> models.Alarm:
         return models.Alarm.from_remote(
             self._make_request(
                 'alarm/',
@@ -48,7 +56,8 @@ class Client(object):
                     'end_at': end_at.strftime('%d/%m/%Y %H:%M:%S'),
                     'send_email': mail,
                     'silent': silent,
-
+                    'requires_acknowledgment': requires_acknowledgment,
+                    'retry_delay': retry_delay,
                 }
             )
         )
@@ -57,6 +66,14 @@ class Client(object):
         return models.Alarm.from_remote(
             self._make_request(
                 'alarms/cancel/{}/'.format(alarm_id),
+                'POST',
+            )
+        )
+
+    def acknowledge_alarm(self, alarm_id: int) -> models.Alarm:
+        return models.Alarm.from_remote(
+            self._make_request(
+                'alarms/acknowledge/{}/'.format(alarm_id),
                 'POST',
             )
         )
@@ -80,6 +97,13 @@ class Client(object):
             models.Alarm.from_remote(alarm)
             for alarm in
             self._make_request('alarms/cancel/', 'POST')['alarms']
+        ]
+
+    def acknowledge_all_alarms(self) -> t.Sequence[models.Alarm]:
+        return [
+            models.Alarm.from_remote(alarm)
+            for alarm in
+            self._make_request('alarms/acknowledge/', 'POST')['alarms']
         ]
 
 
@@ -134,6 +158,8 @@ def new(args: argparse.Namespace):
             end_at = target,
             mail = args.mail,
             silent = args.silent,
+            requires_acknowledgment = args.ack,
+            retry_delay = args.retry_delay,
         )
     )
 
@@ -156,6 +182,20 @@ def cancel(args: argparse.Namespace):
             print('invalid target')
             return
         print_alarm(Client().cancel_alarm(alarm_id))
+
+
+def acknowledge(args: argparse.Namespace):
+    if args.target == 'all':
+        print_alarms(
+            Client().acknowledge_all_alarms()
+        )
+    else:
+        try:
+            alarm_id = int(args.target)
+        except ValueError:
+            print('invalid target')
+            return
+        print_alarm(Client().acknowledge_alarm(alarm_id))
 
 
 def invoke():
@@ -186,12 +226,22 @@ def invoke():
         default = None,
     )
     parser_new.add_argument(
+        '--retry-delay',
+        type = int,
+        default = 60,
+    )
+    parser_new.add_argument(
         '--mail',
         action = 'store_true',
         default = False,
     )
     parser_new.add_argument(
         '--silent',
+        action = 'store_true',
+        default = False,
+    )
+    parser_new.add_argument(
+        '--ack',
         action = 'store_true',
         default = False,
     )
@@ -213,6 +263,14 @@ def invoke():
         type = str,
     )
     parser_list.set_defaults(command = cancel)
+
+    parser_list = subparsers.add_parser('ack')
+    parser_list.add_argument(
+        'target',
+        action = 'store',
+        type = str,
+    )
+    parser_list.set_defaults(command = acknowledge)
 
     args = parser.parse_args()
 

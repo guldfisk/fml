@@ -82,6 +82,16 @@ def cancel_alarm(pk: int):
     return AlarmSchema().serialize(alarm)
 
 
+@server_app.route('/alarms/acknowledge/<int:pk>/', methods = ['POST'])
+def acknowledge_alarm(pk: int):
+    alarm = MANAGER.acknowledge(pk, session)
+
+    if alarm is None:
+        return 'no such alarm', status.HTTP_404_NOT_FOUND
+
+    return AlarmSchema().serialize(alarm)
+
+
 @server_app.route('/alarms/cancel/', methods = ['POST'])
 def cancel_alarms():
     schema = AlarmSchema()
@@ -91,5 +101,18 @@ def cancel_alarms():
             schema.serialize(alarm)
             for alarm in
             MANAGER.cancel_all(session)
+        ]
+    }
+
+
+@server_app.route('/alarms/acknowledge/', methods = ['POST'])
+def acknowledge_alarms():
+    schema = AlarmSchema()
+
+    return {
+        'alarms': [
+            schema.serialize(alarm)
+            for alarm in
+            MANAGER.acknowledge_all(session)
         ]
     }

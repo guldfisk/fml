@@ -13,6 +13,7 @@ class AlarmSchema(Schema[models.Alarm]):
     end_at = fields.Datetime()
 
     requires_acknowledgment = fields.Bool(required = False)
+    retry_delay = fields.Integer(required = False, min = 5)
     send_email = fields.Bool(required = False)
     silent = fields.Bool(required = False)
     level = fields.Enum(models.ImportanceLevel, required = False)

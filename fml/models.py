@@ -28,15 +28,21 @@ class Alarm(Base):
     end_at = Column(DateTime, )
 
     requires_acknowledgment = Column(Boolean, default = False)
+    retry_delay = Column(Integer, default = 60)
     send_email = Column(Boolean, default = False)
     silent = Column(Boolean, default = False)
     level = Column(Enum(ImportanceLevel), default = ImportanceLevel.NORMAL)
 
     times_notified = Column(Integer, default = 0)
+    next_reminder_time_target = Column(DateTime, nullable = True)
     acknowledged = Column(Boolean, default = False)
 
     canceled = Column(Boolean, default = False)
     success = Column(Boolean, default = False)
+
+    @property
+    def next_target_time(self):
+        return self.next_reminder_time_target or self.end_at
 
     @classmethod
     def active_alarms(cls, session: Session, target = None) -> Query:

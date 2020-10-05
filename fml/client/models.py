@@ -132,11 +132,15 @@ class Alarm(RemoteModel):
             yield 'silent'
         if self._send_email:
             yield 'mail'
+        if self._requires_acknowledgment:
+            yield 'ack'
 
     @property
     def status(self) -> str:
         if self._canceled:
             return 'CANCELED'
+        if self._requires_acknowledgment and not self._acknowledged and self._times_notified:
+            return 'AWAITING_ACKNOWLEDGEMENT'
         if (
             self._requires_acknowledgment and self._acknowledged
             or not self._requires_acknowledgment and self._times_notified
