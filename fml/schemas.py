@@ -23,3 +23,14 @@ class AlarmSchema(Schema[models.Alarm]):
 
     canceled = fields.Bool(read_only = True)
     success = fields.Bool(read_only = True)
+
+
+class ToDoSchema(Schema[models.ToDo]):
+    id = fields.Integer(read_only = True)
+
+    text = fields.Text()
+
+    created_at = fields.Datetime(read_only = True)
+    finished_at = fields.Datetime(read_only = True)
+
+    canceled = fields.Bool(read_only = True)

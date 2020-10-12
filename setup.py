@@ -34,5 +34,6 @@ setup(
         'secretresources',
         'texttable',
         'gevent',
+        'click',
     ]
 )

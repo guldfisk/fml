@@ -1,13 +1,25 @@
 import logging
 import typing as t
-import argparse
 import datetime
-import requests
 
+import requests
+import click
 from texttable import Texttable
 
 from fml.client import models
 from fml.client.dateparse import parse_datetime, DateParseException
+from fml.client.utils import format_timedelta
+
+
+class ClientError(Exception):
+
+    def __init__(self, message: str) -> None:
+        super().__init__()
+        self._message = message
+
+    @property
+    def message(self) -> str:
+        return self._message
 
 
 class Client(object):
@@ -35,7 +47,14 @@ class Client(object):
             data = data,
             params = kwargs,
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except Exception:
+            raise ClientError(
+                response.content.decode('utf-8')
+                if isinstance(response.content, bytes) else
+                str(response.content)
+            )
         return response.json()
 
     def new_alarm(
@@ -66,7 +85,7 @@ class Client(object):
         return models.Alarm.from_remote(
             self._make_request(
                 'alarms/cancel/{}/'.format(alarm_id),
-                'POST',
+                'PATCH',
             )
         )
 
@@ -74,7 +93,7 @@ class Client(object):
         return models.Alarm.from_remote(
             self._make_request(
                 'alarms/acknowledge/{}/'.format(alarm_id),
-                'POST',
+                'PATCH',
             )
         )
 
@@ -96,14 +115,60 @@ class Client(object):
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/cancel/', 'POST')['alarms']
+            self._make_request('alarms/cancel/', 'PATCH')['alarms']
         ]
 
     def acknowledge_all_alarms(self) -> t.Sequence[models.Alarm]:
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/acknowledge/', 'POST')['alarms']
+            self._make_request('alarms/acknowledge/', 'PATCH')['alarms']
+        ]
+
+    def new_todo(
+        self,
+        text: str,
+    ) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/',
+                'POST',
+                {
+                    'text': text,
+                }
+            )
+        )
+
+    def cancel_todo(self, target: str) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/cancel/',
+                'PATCH',
+                {'target': target},
+            )
+        )
+
+    def finish_todo(self, target: str) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/finish/',
+                'PATCH',
+                {'target': target},
+            )
+        )
+
+    def active_todos(self) -> t.Sequence[models.ToDo]:
+        return [
+            models.ToDo.from_remote(todo)
+            for todo in
+            self._make_request('todo/')['todos']
+        ]
+
+    def todo_history(self) -> t.Sequence[models.ToDo]:
+        return [
+            models.ToDo.from_remote(todo)
+            for todo in
+            self._make_request('todo/history/')['todos']
         ]
 
 
@@ -116,7 +181,7 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Text', 'Start', 'End', 'ETA', 'flags', 'status']
+        ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'flags', 'status']
     )
     table.add_rows(
         [
@@ -126,6 +191,7 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
                 alarm.started_at.strftime(models.DATETIME_FORMAT),
                 alarm.end_at.strftime(models.DATETIME_FORMAT),
                 alarm.eta,
+                format_timedelta(alarm.elapsed),
                 ' '.join(alarm.flags),
                 alarm.status,
             ]
@@ -137,151 +203,170 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
     print(table.draw())
 
 
-def new(args: argparse.Namespace):
-    if args.absolute is None:
+def print_todo(todo: models.ToDo) -> None:
+    print_todos((todo,))
+
+
+def print_todos(todos: t.Sequence[models.ToDo]) -> None:
+    table = Texttable()
+    table.set_deco(Texttable.HEADER)
+    table.set_max_width(180)
+    table.header(
+        ['ID', 'Text', 'Created At', 'Finished At', 'State']
+    )
+    table.add_rows(
+        [
+            [
+                todo.pk,
+                todo.text,
+                todo.created_at.strftime(models.DATETIME_FORMAT),
+                todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
+                todo.status,
+            ]
+            for todo in
+            todos
+        ],
+        header = False,
+    )
+    print(table.draw())
+
+
+@click.group()
+def main():
+    pass
+
+
+@main.group('alarm')
+def alarm_service():
+    pass
+
+
+@alarm_service.command(name = 'new')
+@click.argument('text', type = str)
+@click.argument('absolute', default = None, type = str, required = False)
+@click.option('--seconds', '-s', default = 0, type = int)
+@click.option('--minutes', '-m', default = 0, type = int)
+@click.option('--hours', '-h', default = 0, type = int)
+@click.option('--retry-delay', default = 60, type = int)
+@click.option('--mail', default = False, type = bool, is_flag = True, show_default = True)
+@click.option('--silent', default = False, type = bool, is_flag = True, show_default = True)
+@click.option('--requires-acknowledgement', '--ack', default = False, type = bool, is_flag = True, show_default = True)
+def new_alarm(
+    text: str,
+    absolute: t.Optional[str] = None,
+    seconds: int = 0,
+    minutes: int = 0,
+    hours: int = 0,
+    retry_delay: int = 0,
+    mail: bool = False,
+    silent: bool = False,
+    requires_acknowledgement: bool = False,
+):
+    if absolute is None:
         target = datetime.datetime.now(
         ) + datetime.timedelta(
-            seconds = args.seconds,
-            minutes = args.minutes,
-            hours = args.hours,
+            seconds = seconds,
+            minutes = minutes,
+            hours = hours,
         )
     else:
         try:
-            target = parse_datetime(args.absolute)
+            target = parse_datetime(absolute)
         except DateParseException:
-            print('invalid datetime format "{}"'.format(args.absolute))
+            print('invalid datetime format "{}"'.format(absolute))
             return
 
     print_alarm(
         Client().new_alarm(
-            args.text,
+            text,
             end_at = target,
-            mail = args.mail,
-            silent = args.silent,
-            requires_acknowledgment = args.ack,
-            retry_delay = args.retry_delay,
+            mail = mail,
+            silent = silent,
+            requires_acknowledgment = requires_acknowledgement,
+            retry_delay = retry_delay,
         )
     )
 
 
-def list_alarms(args: argparse.Namespace):
+@alarm_service.command(name = 'list')
+@click.option('--history', '-h', default = False, type = bool, is_flag = True, show_default = True)
+def list_alarms(history: bool = False):
     print_alarms(
-        Client().alarm_history() if args.history else Client().active_alarms()
+        Client().alarm_history() if history else Client().active_alarms()
     )
 
 
-def cancel(args: argparse.Namespace):
-    if args.target == 'all':
+@alarm_service.command(name = 'cancel')
+@click.argument('target', type = str)
+def cancel_alarms(target: str):
+    if target == 'all':
         print_alarms(
             Client().cancel_all_alarms()
         )
     else:
         try:
-            alarm_id = int(args.target)
+            alarm_id = int(target)
         except ValueError:
             print('invalid target')
             return
         print_alarm(Client().cancel_alarm(alarm_id))
 
 
-def acknowledge(args: argparse.Namespace):
-    if args.target == 'all':
+@alarm_service.command(name = 'ack')
+@click.argument('target', type = str)
+def acknowledge_alarms(target: str):
+    if target == 'all':
         print_alarms(
             Client().acknowledge_all_alarms()
         )
     else:
         try:
-            alarm_id = int(args.target)
+            alarm_id = int(target)
         except ValueError:
             print('invalid target')
             return
         print_alarm(Client().acknowledge_alarm(alarm_id))
 
 
-def invoke():
-    parser = argparse.ArgumentParser(description = 'Alarms', add_help = False)
+@main.group('todo')
+def todo_service():
+    pass
 
-    subparsers = parser.add_subparsers()
 
-    parser_new = subparsers.add_parser('new', add_help = False)
-    parser_new.add_argument('text', type = str)
-    parser_new.add_argument(
-        '-s', '--seconds',
-        type = int,
-        default = 0,
-    )
-    parser_new.add_argument(
-        '-m', '--minutes',
-        type = int,
-        default = 0,
-    )
-    parser_new.add_argument(
-        '-h', '--hours',
-        type = int,
-        default = 0,
-    )
-    parser_new.add_argument(
-        '-a', '--absolute',
-        type = str,
-        default = None,
-    )
-    parser_new.add_argument(
-        '--retry-delay',
-        type = int,
-        default = 60,
-    )
-    parser_new.add_argument(
-        '--mail',
-        action = 'store_true',
-        default = False,
-    )
-    parser_new.add_argument(
-        '--silent',
-        action = 'store_true',
-        default = False,
-    )
-    parser_new.add_argument(
-        '--ack',
-        action = 'store_true',
-        default = False,
+@todo_service.command(name = 'new')
+@click.argument('text', type = str, required = True, nargs = -1)
+def new_todo(
+    text: t.Sequence[str],
+):
+    print_todo(
+        Client().new_todo(
+            ' '.join(text),
+        )
     )
 
-    parser_new.set_defaults(command = new)
 
-    parser_list = subparsers.add_parser('list')
-    parser_list.add_argument(
-        '--history',
-        action = 'store_true',
-        default = False,
+@todo_service.command(name = 'cancel')
+@click.argument('target', type = str)
+def cancel_todo(target: str):
+    print_todo(Client().cancel_todo(target))
+
+
+@todo_service.command(name = 'finish')
+@click.argument('target', type = str)
+def finish_todo(target: str):
+    print_todo(Client().finish_todo(target))
+
+
+@todo_service.command(name = 'list')
+@click.option('--history', '-h', default = False, type = bool, is_flag = True, show_default = True)
+def list_todos(history: bool = False):
+    print_todos(
+        Client().todo_history() if history else Client().active_todos()
     )
-    parser_list.set_defaults(command = list_alarms)
-
-    parser_list = subparsers.add_parser('cancel')
-    parser_list.add_argument(
-        'target',
-        action = 'store',
-        type = str,
-    )
-    parser_list.set_defaults(command = cancel)
-
-    parser_list = subparsers.add_parser('ack')
-    parser_list.add_argument(
-        'target',
-        action = 'store',
-        type = str,
-    )
-    parser_list.set_defaults(command = acknowledge)
-
-    args = parser.parse_args()
-
-    try:
-        command = args.command
-    except AttributeError:
-        print('no command selected')
-        return
-
-    command(args)
 
 
 if __name__ == '__main__':
-    invoke()
+    try:
+        main()
+    except ClientError as e:
+        print(e.message)

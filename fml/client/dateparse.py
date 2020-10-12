@@ -2,7 +2,9 @@ import datetime
 import re
 
 
-PATTERN = re.compile(r'((\d{1,2})/(\d{1,2})?(/(\d{4}))?)?[\s-]*(\d{1,2})(:(\d{1,2}))?(:(\d{1,2}))?$')
+PATTERN = re.compile(
+    r'((\d{1,2})/(\d{1,2})?(/(\d{4}))?)?[\s-]*(((\d{2})(\d{2}))|((\d{1,2})(:(\d{1,2}))?(:(\d{1,2}))?))$'
+)
 
 
 class DateParseException(Exception):
@@ -15,14 +17,14 @@ def parse_datetime(s: str) -> datetime.datetime:
     if m is None:
         raise DateParseException('invalid date')
 
-    _, day, month, _, year, hour, _, minute, _, second = m.groups()
+    _, day, month, _, year, _, _, _hour, _minute, _, hour, _, minute, _, second = m.groups()
     current_date = datetime.datetime.now()
 
     return datetime.datetime(
         year = current_date.year if year is None else int(year),
         month = current_date.month if month is None else int(month),
         day = current_date.day if day is None else int(day),
-        hour = 0 if hour is None else int(hour),
-        minute = 0 if minute is None else int(minute),
+        hour = int(_hour or hour or 0),
+        minute = int(_minute or minute or 0),
         second = 0 if second is None else int(second),
     )

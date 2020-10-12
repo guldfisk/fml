@@ -63,5 +63,24 @@ class Alarm(Base):
         )
 
 
+class ToDo(Base):
+    __tablename__ = 'todo'
+
+    id = Column(Integer, primary_key = True)
+
+    text = Column(String(127))
+
+    created_at = Column(DateTime, default = datetime.datetime.now)
+    finished_at = Column(DateTime, nullable = True)
+    canceled = Column(Boolean, default = False)
+
+    @classmethod
+    def active_todos(cls, session: Session, target = None) -> Query:
+        return session.query(cls if target is None else target).filter(
+            not_(cls.canceled),
+            cls.finished_at == None,
+        )
+
+
 def create(engine: Engine):
     Base.metadata.create_all(engine)

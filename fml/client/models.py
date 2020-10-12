@@ -5,6 +5,8 @@ import typing as t
 
 from abc import ABC, abstractmethod
 
+from fml.client.utils import format_timedelta
+
 
 Serialized = t.Mapping[str, t.Any]
 
@@ -154,5 +156,64 @@ class Alarm(RemoteModel):
     def eta(self) -> str:
         eta = self._end_at - datetime.datetime.now()
         if eta.total_seconds() > 0:
-            return str(eta)
+            return format_timedelta(eta)
         return '-'
+
+    @property
+    def elapsed(self) -> datetime.timedelta:
+        return max(datetime.datetime.now() - self._started_at, datetime.timedelta(seconds = 0))
+
+
+class ToDo(RemoteModel):
+
+    def __init__(
+        self,
+        pk: int,
+        text: str,
+        created_at: datetime.datetime,
+        finished_at: t.Optional[datetime.datetime],
+        canceled: bool,
+    ):
+        super().__init__(pk)
+        self._text = text
+        self._created_at = created_at
+        self._finished_at = finished_at
+        self._canceled = canceled
+
+    @classmethod
+    def from_remote(cls, remote: Serialized) -> ToDo:
+        return cls(
+            pk = remote['id'],
+            text = remote['text'],
+            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
+            finished_at = (
+                datetime.datetime.strptime(remote['finished_at'], DATETIME_FORMAT)
+                if remote['finished_at'] else
+                None
+            ),
+            canceled = remote['canceled'],
+        )
+
+    @property
+    def text(self) -> str:
+        return self._text
+
+    @property
+    def created_at(self) -> datetime.datetime:
+        return self._created_at
+
+    @property
+    def finished_at(self) -> t.Optional[datetime.datetime]:
+        return self._finished_at
+
+    @property
+    def canceled(self) -> bool:
+        return self._canceled
+
+    @property
+    def status(self) -> str:
+        if self._canceled:
+            return 'CANCELED'
+        if self._finished_at:
+            return 'SUCCESS'
+        return 'PENDING'
