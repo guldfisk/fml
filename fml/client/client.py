@@ -233,24 +233,43 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
 
 @click.group()
 def main():
+    """
+    Keep track of stuff and such.
+    """
     pass
 
 
 @main.group('alarm')
 def alarm_service():
+    """
+    Timed alarms.
+    """
     pass
 
 
 @alarm_service.command(name = 'new')
 @click.argument('text', type = str)
 @click.argument('absolute', default = None, type = str, required = False)
-@click.option('--seconds', '-s', default = 0, type = int)
-@click.option('--minutes', '-m', default = 0, type = int)
-@click.option('--hours', '-h', default = 0, type = int)
-@click.option('--retry-delay', default = 60, type = int)
-@click.option('--mail', default = False, type = bool, is_flag = True, show_default = True)
-@click.option('--silent', default = False, type = bool, is_flag = True, show_default = True)
-@click.option('--requires-acknowledgement', '--ack', default = False, type = bool, is_flag = True, show_default = True)
+@click.option('--seconds', '-s', default = 0, type = int, help='Relative offset seconds.')
+@click.option('--minutes', '-m', default = 0, type = int, help='Relative offset minutes.')
+@click.option('--hours', '-h', default = 0, type = int, help='Relative offset hours.')
+@click.option(
+    '--retry-delay',
+    default = 60,
+    type = int,
+    help='Delay in seconds for re-notification delay. Only relevant when ackowledgement is required.',
+)
+@click.option('--mail', default = False, type = bool, is_flag = True, show_default = True, help='Also send email.')
+@click.option('--silent', default = False, type = bool, is_flag = True, show_default = True, help='Don\'t play sound.')
+@click.option(
+    '--requires-acknowledgement',
+    '--ack',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help='Re notify until acknowledged.'
+)
 def new_alarm(
     text: str,
     absolute: t.Optional[str] = None,
@@ -262,6 +281,9 @@ def new_alarm(
     silent: bool = False,
     requires_acknowledgement: bool = False,
 ):
+    """
+    Create new alarm.
+    """
     if absolute is None:
         target = datetime.datetime.now(
         ) + datetime.timedelta(
@@ -289,8 +311,19 @@ def new_alarm(
 
 
 @alarm_service.command(name = 'list')
-@click.option('--history', '-h', default = False, type = bool, is_flag = True, show_default = True)
+@click.option(
+    '--history',
+    '-h',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help='Include all alarms, nit just active ones.',
+)
 def list_alarms(history: bool = False):
+    """
+    List active alarms.
+    """
     print_alarms(
         Client().alarm_history() if history else Client().active_alarms()
     )
@@ -299,6 +332,9 @@ def list_alarms(history: bool = False):
 @alarm_service.command(name = 'cancel')
 @click.argument('target', type = str)
 def cancel_alarms(target: str):
+    """
+    Cancel alarms with id. "all" for cancelling all active alarms.
+    """
     if target == 'all':
         print_alarms(
             Client().cancel_all_alarms()
@@ -315,6 +351,10 @@ def cancel_alarms(target: str):
 @alarm_service.command(name = 'ack')
 @click.argument('target', type = str)
 def acknowledge_alarms(target: str):
+    """
+    Acknowledge alarm requiring acknowledgement. You can only acknowledge commands after their target time.
+    Target is either id of alarm or "all" for all acknowledgeable alarms.
+    """
     if target == 'all':
         print_alarms(
             Client().acknowledge_all_alarms()
@@ -330,6 +370,9 @@ def acknowledge_alarms(target: str):
 
 @main.group('todo')
 def todo_service():
+    """
+    Keep track of stuff to do.
+    """
     pass
 
 
@@ -338,6 +381,9 @@ def todo_service():
 def new_todo(
     text: t.Sequence[str],
 ):
+    """
+    Create new todo.
+    """
     print_todo(
         Client().new_todo(
             ' '.join(text),
@@ -348,18 +394,35 @@ def new_todo(
 @todo_service.command(name = 'cancel')
 @click.argument('target', type = str)
 def cancel_todo(target: str):
+    """
+    Cancel todo. Target is either id or partial text of todo.
+    """
     print_todo(Client().cancel_todo(target))
 
 
 @todo_service.command(name = 'finish')
 @click.argument('target', type = str)
 def finish_todo(target: str):
+    """
+    Finish todo. Target is either id or partial text of todo.
+    """
     print_todo(Client().finish_todo(target))
 
 
 @todo_service.command(name = 'list')
-@click.option('--history', '-h', default = False, type = bool, is_flag = True, show_default = True)
+@click.option(
+    '--history',
+    '-h',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help='Include non-pending todos.'
+)
 def list_todos(history: bool = False):
+    """
+    List pending todos.
+    """
     print_todos(
         Client().todo_history() if history else Client().active_todos()
     )

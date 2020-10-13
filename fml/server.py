@@ -203,7 +203,7 @@ def get_todo(pk: int):
 
 @server_app.route('/todo/history/', methods = ['GET'])
 def todo_history():
-    todos: t.List[models.ToDo] = session.query(models.ToDo).order_by(models.ToDo.created_at.desc())
+    todos: t.List[models.ToDo] = session.query(models.ToDo).order_by(models.ToDo.created_at.desc()).limit(25)
 
     schema = ToDoSchema()
 
