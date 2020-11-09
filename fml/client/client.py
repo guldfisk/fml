@@ -212,7 +212,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Text', 'Created At', 'Finished At', 'State']
+        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'State']
     )
     table.add_rows(
         [
@@ -221,6 +221,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
                 todo.text,
                 todo.created_at.strftime(models.DATETIME_FORMAT),
                 todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
+                format_timedelta(todo.elapsed),
                 todo.status,
             ]
             for todo in
@@ -318,7 +319,7 @@ def new_alarm(
     type = bool,
     is_flag = True,
     show_default = True,
-    help='Include all alarms, nit just active ones.',
+    help='Include all alarms, not just active ones.',
 )
 def list_alarms(history: bool = False):
     """

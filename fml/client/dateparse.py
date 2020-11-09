@@ -3,7 +3,7 @@ import re
 
 
 PATTERN = re.compile(
-    r'((\d{1,2})/(\d{1,2})?(/(\d{4}))?)?[\s-]*(((\d{2})(\d{2}))|((\d{1,2})(:(\d{1,2}))?(:(\d{1,2}))?))$'
+    r'(((\d{1,2})/(\d{1,2})?(/(\d{4}))?)|(\+(\d+)))?[\s-]*(((\d{2})(\d{2}))|((\d{1,2})(:(\d{1,2}))?(:(\d{1,2}))?))$'
 )
 
 
@@ -17,7 +17,7 @@ def parse_datetime(s: str) -> datetime.datetime:
     if m is None:
         raise DateParseException('invalid date')
 
-    _, day, month, _, year, _, _, _hour, _minute, _, hour, _, minute, _, second = m.groups()
+    _, _, day, month, _, year, _, day_delta, _, _, _hour, _minute, _, hour, _, minute, _, second = m.groups()
     current_date = datetime.datetime.now()
 
     return datetime.datetime(
@@ -27,4 +27,4 @@ def parse_datetime(s: str) -> datetime.datetime:
         hour = int(_hour or hour or 0),
         minute = int(_minute or minute or 0),
         second = 0 if second is None else int(second),
-    )
+    ) + datetime.timedelta(days=0 if day_delta is None else int(day_delta))
