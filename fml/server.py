@@ -49,7 +49,9 @@ def create_alarm():
 
 @server_app.route('/alarms/', methods = ['GET'])
 def view_alarms():
-    alarms = models.Alarm.active_alarms(session).order_by(models.Alarm.end_at).all()
+    limit = request.args.get('limit')
+
+    alarms = models.Alarm.active_alarms(session).order_by(models.Alarm.end_at).limit(limit)
 
     schema = AlarmSchema()
 
@@ -64,7 +66,9 @@ def view_alarms():
 
 @server_app.route('/alarms/history/', methods = ['GET'])
 def alarms_history():
-    alarms = session.query(models.Alarm).order_by(models.Alarm.started_at.desc()).limit(10)
+    limit = request.args.get('limit')
+
+    alarms = session.query(models.Alarm).order_by(models.Alarm.started_at.desc()).limit(limit)
 
     schema = AlarmSchema()
 

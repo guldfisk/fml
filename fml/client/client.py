@@ -97,18 +97,18 @@ class Client(object):
             )
         )
 
-    def active_alarms(self) -> t.Sequence[models.Alarm]:
+    def active_alarms(self, limit: t.Optional[int] = None) -> t.Sequence[models.Alarm]:
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/')['alarms']
+            self._make_request('alarms/', limit = limit)['alarms']
         ]
 
-    def alarm_history(self) -> t.Sequence[models.Alarm]:
+    def alarm_history(self, limit: t.Optional[int] = 10) -> t.Sequence[models.Alarm]:
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/history/')['alarms']
+            self._make_request('alarms/history/', limit = limit)['alarms']
         ]
 
     def cancel_all_alarms(self) -> t.Sequence[models.Alarm]:
@@ -323,12 +323,13 @@ def new_alarm(
     show_default = True,
     help = 'Include all alarms, not just active ones.',
 )
-def list_alarms(history: bool = False):
+@click.option('--limit', '-l', default = 10, type = int, help = 'Limit.')
+def list_alarms(history: bool = False, limit: int = 10):
     """
     List active alarms.
     """
     print_alarms(
-        Client().alarm_history() if history else Client().active_alarms()
+        Client().alarm_history(limit = limit) if history else Client().active_alarms(limit = limit)
     )
 
 
