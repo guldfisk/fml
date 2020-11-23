@@ -221,3 +221,7 @@ class ToDo(RemoteModel):
     @property
     def elapsed(self) -> datetime.timedelta:
         return max(datetime.datetime.now() - self._created_at, datetime.timedelta(seconds = 0))
+
+    @property
+    def duration(self) -> datetime.timedelta:
+        return (self._finished_at or datetime.datetime.now()) - self._created_at

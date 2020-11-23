@@ -212,7 +212,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'State']
+        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State']
     )
     table.add_rows(
         [
@@ -222,6 +222,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
                 todo.created_at.strftime(models.DATETIME_FORMAT),
                 todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
                 format_timedelta(todo.elapsed),
+                format_timedelta(todo.duration) if todo.finished_at else '-',
                 todo.status,
             ]
             for todo in
@@ -251,17 +252,18 @@ def alarm_service():
 @alarm_service.command(name = 'new')
 @click.argument('text', type = str)
 @click.argument('absolute', default = None, type = str, required = False)
-@click.option('--seconds', '-s', default = 0, type = int, help='Relative offset seconds.')
-@click.option('--minutes', '-m', default = 0, type = int, help='Relative offset minutes.')
-@click.option('--hours', '-h', default = 0, type = int, help='Relative offset hours.')
+@click.option('--seconds', '-s', default = 0, type = int, help = 'Relative offset seconds.')
+@click.option('--minutes', '-m', default = 0, type = int, help = 'Relative offset minutes.')
+@click.option('--hours', '-h', default = 0, type = int, help = 'Relative offset hours.')
 @click.option(
     '--retry-delay',
     default = 60,
     type = int,
-    help='Delay in seconds for re-notification delay. Only relevant when ackowledgement is required.',
+    help = 'Delay in seconds for re-notification delay. Only relevant when ackowledgement is required.',
 )
-@click.option('--mail', default = False, type = bool, is_flag = True, show_default = True, help='Also send email.')
-@click.option('--silent', default = False, type = bool, is_flag = True, show_default = True, help='Don\'t play sound.')
+@click.option('--mail', default = False, type = bool, is_flag = True, show_default = True, help = 'Also send email.')
+@click.option('--silent', default = False, type = bool, is_flag = True, show_default = True,
+              help = 'Don\'t play sound.')
 @click.option(
     '--requires-acknowledgement',
     '--ack',
@@ -269,7 +271,7 @@ def alarm_service():
     type = bool,
     is_flag = True,
     show_default = True,
-    help='Re notify until acknowledged.'
+    help = 'Re notify until acknowledged.',
 )
 def new_alarm(
     text: str,
@@ -319,7 +321,7 @@ def new_alarm(
     type = bool,
     is_flag = True,
     show_default = True,
-    help='Include all alarms, not just active ones.',
+    help = 'Include all alarms, not just active ones.',
 )
 def list_alarms(history: bool = False):
     """
@@ -418,7 +420,7 @@ def finish_todo(target: str):
     type = bool,
     is_flag = True,
     show_default = True,
-    help='Include non-pending todos.'
+    help = 'Include non-pending todos.'
 )
 def list_todos(history: bool = False):
     """
