@@ -119,7 +119,7 @@ class AlarmManager(object):
             self.handle_alarm(alarm_id)
 
     def cancel(self, alarm_id: int, session: Session) -> t.Optional[Alarm]:
-        alarm = session.query(Alarm).get(alarm_id)
+        alarm = Alarm.active_alarms(session).filter(Alarm.id == alarm_id).scalar()
 
         if alarm is None:
             return

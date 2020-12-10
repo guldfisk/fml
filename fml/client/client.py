@@ -164,11 +164,11 @@ class Client(object):
             self._make_request('todo/')['todos']
         ]
 
-    def todo_history(self) -> t.Sequence[models.ToDo]:
+    def todo_history(self, limit: t.Optional[int] = 25) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
             for todo in
-            self._make_request('todo/history/')['todos']
+            self._make_request('todo/history/', limit = limit)['todos']
         ]
 
 
@@ -423,12 +423,13 @@ def finish_todo(target: str):
     show_default = True,
     help = 'Include non-pending todos.'
 )
-def list_todos(history: bool = False):
+@click.option('--limit', '-l', default = 25, type = int, help = 'Limit.')
+def list_todos(history: bool = False, limit: int = 25):
     """
     List pending todos.
     """
     print_todos(
-        Client().todo_history() if history else Client().active_todos()
+        Client().todo_history(limit = limit) if history else Client().active_todos()
     )
 
 

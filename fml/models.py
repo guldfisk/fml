@@ -25,7 +25,7 @@ class Alarm(Base):
     text = Column(String(127))
 
     started_at = Column(DateTime, default = datetime.datetime.now)
-    end_at = Column(DateTime, )
+    end_at = Column(DateTime)
 
     requires_acknowledgment = Column(Boolean, default = False)
     retry_delay = Column(Integer, default = 60)
@@ -41,7 +41,18 @@ class Alarm(Base):
     success = Column(Boolean, default = False)
 
     @property
-    def next_target_time(self):
+    def cancelable(self) -> bool:
+        return not self.canceled and (
+            (
+                self.requires_acknowledgment and not self.acknowledged
+            ) or
+            (
+                not self.requires_acknowledgment and self.times_notified <= 0
+            )
+        )
+
+    @property
+    def next_target_time(self) -> datetime.datetime:
         return self.next_reminder_time_target or self.end_at
 
     @classmethod
@@ -73,6 +84,10 @@ class ToDo(Base):
     created_at = Column(DateTime, default = datetime.datetime.now)
     finished_at = Column(DateTime, nullable = True)
     canceled = Column(Boolean, default = False)
+
+    @property
+    def cancelable(self) -> bool:
+        return not self.canceled and not self.finished_at
 
     @classmethod
     def active_todos(cls, session: Session, target = None) -> Query:

@@ -170,7 +170,10 @@ class ModifyTodo(View):
         if todo is None:
             return 'no such todo', status.HTTP_404_NOT_FOUND
 
-        self._modify_todo(todo)
+        v = self._modify_todo(todo)
+
+        if isinstance(v, t.Tuple):
+            return v
 
         session.commit()
 
@@ -179,8 +182,9 @@ class ModifyTodo(View):
 
 class CancelTodo(ModifyTodo):
 
-    def _modify_todo(self, todo: models.ToDo) -> None:
+    def _modify_todo(self, todo: models.ToDo) -> t.Optional[t.Tuple[str, int]]:
         todo.canceled = True
+        todo.finished_at = datetime.datetime.now()
 
 
 server_app.add_url_rule('/todo/cancel/', methods = ['PATCH'], view_func = CancelTodo.as_view('cancel_todo'))
@@ -188,7 +192,7 @@ server_app.add_url_rule('/todo/cancel/', methods = ['PATCH'], view_func = Cancel
 
 class FinishTodo(ModifyTodo):
 
-    def _modify_todo(self, todo: models.ToDo) -> None:
+    def _modify_todo(self, todo: models.ToDo) -> t.Optional[t.Tuple[str, int]]:
         todo.finished_at = datetime.datetime.now()
 
 
@@ -207,7 +211,9 @@ def get_todo(pk: int):
 
 @server_app.route('/todo/history/', methods = ['GET'])
 def todo_history():
-    todos: t.List[models.ToDo] = session.query(models.ToDo).order_by(models.ToDo.created_at.desc()).limit(25)
+    limit = request.args.get('limit')
+
+    todos: t.List[models.ToDo] = session.query(models.ToDo).order_by(models.ToDo.created_at.desc()).limit(limit)
 
     schema = ToDoSchema()
 
