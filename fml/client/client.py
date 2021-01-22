@@ -176,7 +176,7 @@ class Client(object):
     def todo_burn_down(self) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
-                datetime.datetime.strptime(date, "%d-%m-%Y"),
+                datetime.datetime.strptime(date, models.DATETIME_FORMAT),
                 active_todos,
             )
             for date, active_todos in

@@ -1,6 +1,5 @@
 import datetime
 import typing as t
-from collections import defaultdict
 
 from flask import request, Flask
 from flask.views import View
@@ -19,6 +18,8 @@ from fml import session_factory, models
 from fml.schemas import AlarmSchema, ToDoSchema
 from fml.timer import MANAGER
 
+
+DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
 
 server_app: Flask = FlaskAPI(__name__)
 session: Session = flask_scoped_session(session_factory, server_app)
@@ -244,32 +245,32 @@ def todo_list():
 
 @server_app.route('/todo/burn-down/', methods = ['GET'])
 def todo_burn_down():
-    todos: t.List[models.ToDo] = list(session.query(models.ToDo).order_by(models.ToDo.created_at.asc()))
+    todos: t.List[models.ToDo] = list(session.query(models.ToDo))
 
     if not todos:
         return {
             'points': [],
         }
 
-    start_dates = defaultdict(list)
-    end_dates = defaultdict(list)
+    changes: t.List[t.Tuple[datetime.datetime, int]] = []
 
     for todo in todos:
-        start_dates[todo.created_at.date()].append(todo)
+        changes.append((todo.created_at, 1))
         if todo.finished_at is not None:
-            end_dates[todo.finished_at.date()].append(todo)
+            changes.append((todo.finished_at, -1))
+
+    changes.append((datetime.datetime.now(), 0))
+
+    changes = sorted(changes, key = lambda p: p[0])
 
     active = 0
     points = []
 
-    first_date = todos[0].created_at.date()
-
-    for i in range((datetime.datetime.now().date() - first_date).days + 1):
-        current_date = first_date + datetime.timedelta(days = i)
-        active += len(start_dates[current_date]) - len(end_dates[current_date])
+    for time, delta in changes:
+        active += delta
         points.append(
             (
-                current_date.strftime('%d-%m-%Y'),
+                time.strftime(DATETIME_FORMAT),
                 active,
             )
         )
@@ -277,4 +278,3 @@ def todo_burn_down():
     return {
         'points': points,
     }
-
