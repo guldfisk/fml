@@ -35,5 +35,7 @@ setup(
         'texttable',
         'gevent',
         'click',
+        'gnuplotlib',
+        'numpy',
     ]
 )

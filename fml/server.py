@@ -1,5 +1,6 @@
 import datetime
 import typing as t
+from collections import defaultdict
 
 from flask import request, Flask
 from flask.views import View
@@ -239,3 +240,41 @@ def todo_list():
             todos
         ]
     }
+
+
+@server_app.route('/todo/burn-down/', methods = ['GET'])
+def todo_burn_down():
+    todos: t.List[models.ToDo] = list(session.query(models.ToDo).order_by(models.ToDo.created_at.asc()))
+
+    if not todos:
+        return {
+            'points': [],
+        }
+
+    start_dates = defaultdict(list)
+    end_dates = defaultdict(list)
+
+    for todo in todos:
+        start_dates[todo.created_at.date()].append(todo)
+        if todo.finished_at is not None:
+            end_dates[todo.finished_at.date()].append(todo)
+
+    active = 0
+    points = []
+
+    first_date = todos[0].created_at.date()
+
+    for i in range((datetime.datetime.now().date() - first_date).days + 1):
+        current_date = first_date + datetime.timedelta(days = i)
+        active += len(start_dates[current_date]) - len(end_dates[current_date])
+        points.append(
+            (
+                current_date.strftime('%d-%m-%Y'),
+                active,
+            )
+        )
+
+    return {
+        'points': points,
+    }
+

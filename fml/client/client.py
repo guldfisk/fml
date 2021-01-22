@@ -4,6 +4,8 @@ import datetime
 
 import requests
 import click
+import gnuplotlib as gp
+import numpy as np
 from texttable import Texttable
 
 from fml.client import models
@@ -169,6 +171,16 @@ class Client(object):
             models.ToDo.from_remote(todo)
             for todo in
             self._make_request('todo/history/', limit = limit)['todos']
+        ]
+
+    def todo_burn_down(self) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
+        return [
+            (
+                datetime.datetime.strptime(date, "%d-%m-%Y"),
+                active_todos,
+            )
+            for date, active_todos in
+            self._make_request('todo/burn-down/')['points']
         ]
 
 
@@ -430,6 +442,34 @@ def list_todos(history: bool = False, limit: int = 25):
     """
     print_todos(
         Client().todo_history(limit = limit) if history else Client().active_todos()
+    )
+
+
+@todo_service.command(name = 'burndown')
+@click.option(
+    '--chart',
+    '-c',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Output to window instead of terminal',
+)
+def todos_burn_down(chart: bool = False):
+    points = Client().todo_burn_down()
+
+    args = {
+        'unset': 'grid',
+        'set': ('xdata time', 'format x "%d/%m/%y"'),
+    }
+
+    if not chart:
+        args['terminal'] = 'dumb 160 40'
+
+    gp.plot(
+        np.asarray([date.timestamp() for date, _ in points]),
+        np.asarray([active for _, active in points]),
+        **args,
     )
 
 
