@@ -456,6 +456,9 @@ def list_todos(history: bool = False, limit: int = 25):
     help = 'Output to window instead of terminal',
 )
 def todos_burn_down(chart: bool = False):
+    """
+    Show todo burndown chart.
+    """
     points = Client().todo_burn_down()
 
     args = {
