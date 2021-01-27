@@ -183,6 +183,16 @@ class Client(object):
             self._make_request('todo/burn-down/')['points']
         ]
 
+    def todo_throughput(self) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
+        return [
+            (
+                datetime.datetime.strptime(date, models.DATETIME_FORMAT),
+                throughput,
+            )
+            for date, throughput in
+            self._make_request('todo/throughput/')['points']
+        ]
+
 
 def print_alarm(alarm: models.Alarm) -> None:
     print_alarms((alarm,))
@@ -445,6 +455,22 @@ def list_todos(history: bool = False, limit: int = 25):
     )
 
 
+def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]], chart: bool = False) -> None:
+    args = {
+        'unset': 'grid',
+        'set': ('xdata time', 'format x "%d/%m/%y"'),
+    }
+
+    if not chart:
+        args['terminal'] = 'dumb 160 40'
+
+    gp.plot(
+        np.asarray([date.timestamp() for date, _ in points]),
+        np.asarray([active for _, active in points]),
+        **args,
+    )
+
+
 @todo_service.command(name = 'burndown')
 @click.option(
     '--chart',
@@ -459,20 +485,29 @@ def todos_burn_down(chart: bool = False):
     """
     Show todo burndown chart.
     """
-    points = Client().todo_burn_down()
+    _show_points(
+        Client().todo_burn_down(),
+        chart,
+    )
 
-    args = {
-        'unset': 'grid',
-        'set': ('xdata time', 'format x "%d/%m/%y"'),
-    }
 
-    if not chart:
-        args['terminal'] = 'dumb 160 40'
-
-    gp.plot(
-        np.asarray([date.timestamp() for date, _ in points]),
-        np.asarray([active for _, active in points]),
-        **args,
+@todo_service.command(name = 'throughput')
+@click.option(
+    '--chart',
+    '-c',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Output to window instead of terminal',
+)
+def todos_throughput(chart: bool = False):
+    """
+    Show todo thoughput chart.
+    """
+    _show_points(
+        Client().todo_throughput(),
+        chart,
     )
 
 

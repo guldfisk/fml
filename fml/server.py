@@ -36,9 +36,12 @@ def create_alarm():
     schema = AlarmSchema()
 
     try:
-        alarm = schema.deserialize(request.data)
+        alarm: models.Alarm = schema.deserialize(request.data)
     except DeserializationError as e:
         return e.serialized, status.HTTP_400_BAD_REQUEST
+
+    if alarm.end_at < datetime.datetime.now() - datetime.timedelta(seconds = 1):
+        return 'Alarm must finish in the future', status.HTTP_400_BAD_REQUEST
 
     session.add(alarm)
 
@@ -184,7 +187,7 @@ class ModifyTodo(View):
 
 class CancelTodo(ModifyTodo):
 
-    def _modify_todo(self, todo: models.ToDo) -> t.Optional[t.Tuple[str, int]]:
+    def _modify_todo(self, todo: models.ToDo) -> None:
         todo.canceled = True
         todo.finished_at = datetime.datetime.now()
 
@@ -194,7 +197,7 @@ server_app.add_url_rule('/todo/cancel/', methods = ['PATCH'], view_func = Cancel
 
 class FinishTodo(ModifyTodo):
 
-    def _modify_todo(self, todo: models.ToDo) -> t.Optional[t.Tuple[str, int]]:
+    def _modify_todo(self, todo: models.ToDo) -> None:
         todo.finished_at = datetime.datetime.now()
 
 
@@ -272,6 +275,43 @@ def todo_burn_down():
             (
                 time.strftime(DATETIME_FORMAT),
                 active,
+            )
+        )
+
+    return {
+        'points': points,
+    }
+
+
+@server_app.route('/todo/throughput/', methods = ['GET'])
+def todo_throughput():
+    finished_dates = [
+        v[0].date()
+        for v in
+        session.query(models.ToDo.finished_at).filter(
+            models.ToDo.canceled == False,
+            models.ToDo.finished_at != None,
+        ).order_by(models.ToDo.finished_at)
+    ]
+
+    finished_dates_map = [
+        0
+        for _ in range(
+            (datetime.datetime.now().date() - finished_dates[0]).days + 1
+        )
+    ]
+
+    for finished_date in finished_dates:
+        finished_dates_map[(finished_date - finished_dates[0]).days] += 1
+
+    points = []
+
+    for idx in range(len(finished_dates_map)):
+        _slice = finished_dates_map[max(0, idx - 5):idx + 1]
+        points.append(
+            (
+                (finished_dates[0] + datetime.timedelta(days = idx)).strftime(DATETIME_FORMAT),
+                sum(_slice) / len(_slice),
             )
         )
 
