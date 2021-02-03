@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import typing as t
 import datetime
 from enum import Enum as _Enum
 
-from sqlalchemy import Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_
+from sqlalchemy import Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_, ForeignKey, UniqueConstraint
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, Query
+from sqlalchemy.orm import Session, Query, relationship
 
 
 Base = declarative_base()
@@ -74,6 +75,33 @@ class Alarm(Base):
         )
 
 
+class Tagged(Base):
+    __tablename__ = 'tagged'
+
+    id = Column(Integer, primary_key = True)
+    tag_id = Column(
+        Integer,
+        ForeignKey('tag.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+    todo_id = Column(
+        Integer,
+        ForeignKey('todo.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+
+    __table_args__ = (UniqueConstraint('tag_id', 'todo_id'),)
+
+
+class Tag(Base):
+    __tablename__ = 'tag'
+
+    id = Column(Integer, primary_key = True)
+    name = Column(String(127), unique = True)
+    todos: t.Sequence[ToDo] = relationship('ToDo', back_populates = 'tags', secondary = Tagged.__table__)
+    created_at = Column(DateTime, default = datetime.datetime.now)
+
+
 class ToDo(Base):
     __tablename__ = 'todo'
 
@@ -84,6 +112,12 @@ class ToDo(Base):
     created_at = Column(DateTime, default = datetime.datetime.now)
     finished_at = Column(DateTime, nullable = True)
     canceled = Column(Boolean, default = False)
+
+    tags: t.Sequence[Tag] = relationship(
+        'Tag',
+        back_populates = 'todos',
+        secondary = Tagged.__table__,
+    )
 
     @property
     def cancelable(self) -> bool:

@@ -37,5 +37,6 @@ setup(
         'click',
         'gnuplotlib',
         'numpy',
+        'alembic',
     ]
 )

@@ -46,7 +46,7 @@ class Client(object):
         response = requests.request(
             method,
             url,
-            data = data,
+            json = data,
             params = kwargs,
         )
         try:
@@ -130,6 +130,7 @@ class Client(object):
     def new_todo(
         self,
         text: str,
+        tags: t.Collection[str] = (),
     ) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
@@ -137,6 +138,7 @@ class Client(object):
                 'POST',
                 {
                     'text': text,
+                    'tags': tags,
                 }
             )
         )
@@ -193,6 +195,32 @@ class Client(object):
             self._make_request('todo/throughput/')['points']
         ]
 
+    def list_tags(self) -> t.Sequence[str]:
+        return [
+            tag['name']
+            for tag in
+            self._make_request('tag/')['tags']
+        ]
+
+    def create_tag(self, tag: str) -> None:
+        self._make_request(
+            'tag/',
+            method = 'POST',
+            data = {
+                'name': tag,
+            }
+        )
+
+    def tag_todo(self, todo: t.Union[int, str], tag: t.Union[int, str]) -> None:
+        self._make_request(
+            'todo/tag/',
+            method = 'POST',
+            data = {
+                'todo_id': todo,
+                'tag_id': tag,
+            }
+        )
+
 
 def print_alarm(alarm: models.Alarm) -> None:
     print_alarms((alarm,))
@@ -234,7 +262,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State']
+        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Tags']
     )
     table.add_rows(
         [
@@ -246,6 +274,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
                 format_timedelta(todo.elapsed),
                 format_timedelta(todo.duration) if todo.finished_at else '-',
                 todo.status,
+                ', '.join(todo.tags),
             ]
             for todo in
             todos
@@ -404,8 +433,10 @@ def todo_service():
 
 @todo_service.command(name = 'new')
 @click.argument('text', type = str, required = True, nargs = -1)
+@click.option('--tags', '-t', default = (), type = str, help = 'Tags.', multiple = True)
 def new_todo(
     text: t.Sequence[str],
+    tags: t.Sequence[str],
 ):
     """
     Create new todo.
@@ -413,6 +444,7 @@ def new_todo(
     print_todo(
         Client().new_todo(
             ' '.join(text),
+            tags = tags,
         )
     )
 
@@ -509,6 +541,49 @@ def todos_throughput(chart: bool = False):
         Client().todo_throughput(),
         chart,
     )
+
+
+@todo_service.group('tag')
+def tag_service():
+    """
+    Todo tags.
+    """
+    pass
+
+
+@tag_service.command(name = 'list')
+def list_tags():
+    """
+    List tags.
+    """
+    for tag in Client().list_tags():
+        print(tag)
+
+
+@tag_service.command(name = 'new')
+@click.argument('tag', type = str, required = True)
+def tag_todo(
+    tag: str,
+):
+    """
+    Create a new tag
+    """
+    Client().create_tag(tag)
+    print('ok')
+
+
+@tag_service.command(name = 'add')
+@click.argument('todo', type = str, required = True)
+@click.argument('tag', type = str, required = True)
+def tag_todo(
+    todo: str,
+    tag: str,
+):
+    """
+    Tag todo.
+    """
+    Client().tag_todo(todo, tag)
+    print('ok')
 
 
 if __name__ == '__main__':

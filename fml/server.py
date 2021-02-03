@@ -9,13 +9,15 @@ from flask_api.request import APIRequest
 
 from flask_sqlalchemy_session import flask_scoped_session
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import MultipleResultsFound
 
 from hardcandy.schema import DeserializationError
 
+from fml import schemas
 from fml import session_factory, models
-from fml.schemas import AlarmSchema, ToDoSchema
+from fml.schemas import AlarmSchema, ToDoSchema, TagSchema, TaggedSchema
 from fml.timer import MANAGER
 
 
@@ -141,11 +143,89 @@ def create_todo():
     except DeserializationError as e:
         return e.serialized, status.HTTP_400_BAD_REQUEST
 
+    for tag in schemas.TagsSchema().deserialize_raw(request.data)['tags']:
+        if isinstance(tag, int):
+            _tag = session.query(models.Tag).get(tag)
+        else:
+            try:
+                _tag = session.query(models.Tag).filter(
+                    models.Tag.name.contains(tag)
+                ).scalar()
+            except MultipleResultsFound:
+                return 'ambiguous tag "{}"'.format(tag), status.HTTP_400_BAD_REQUEST
+
+        if _tag is None:
+            return 'unknown tag "{}"'.format(tag), status.HTTP_404_NOT_FOUND
+
+        todo.tags.append(_tag)
+
     session.add(todo)
 
     session.commit()
 
     return schema.serialize(todo)
+
+
+@server_app.route('/tag/', methods = ['POST'])
+def create_tag():
+    schema = TagSchema()
+
+    try:
+        tag = schema.deserialize(request.data)
+    except DeserializationError as e:
+        return e.serialized, status.HTTP_400_BAD_REQUEST
+
+    session.add(tag)
+
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        return 'Tag already exists', status.HTTP_400_BAD_REQUEST
+
+    return schema.serialize(tag)
+
+
+@server_app.route('/todo/tag/', methods = ['POST'])
+def tag_todo():
+    schema = TaggedSchema()
+
+    try:
+        tagged = schema.deserialize_raw(request.data)
+    except DeserializationError as e:
+        return e.serialized, status.HTTP_400_BAD_REQUEST
+
+    if isinstance(tagged['todo_id'], int):
+        todo_id = tagged['todo_id']
+    else:
+        try:
+            todo_id = models.ToDo.active_todos(session, target = models.ToDo.id).filter(
+                models.ToDo.text.contains(tagged['todo_id'])
+            ).scalar()
+        except MultipleResultsFound:
+            return 'ambiguous todo', status.HTTP_400_BAD_REQUEST
+
+    if isinstance(tagged['tag_id'], int):
+        tag_id = tagged['tag_id']
+    else:
+        try:
+            tag_id = session.query(models.Tag.id).filter(
+                models.Tag.name.contains(tagged['tag_id'])
+            ).scalar()
+        except MultipleResultsFound:
+            return 'ambiguous tag', status.HTTP_400_BAD_REQUEST
+
+    tag = models.Tagged(todo_id = todo_id, tag_id = tag_id)
+
+    session.add(tag)
+
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        return 'Invalid args', status.HTTP_400_BAD_REQUEST
+
+    return {'status': 'ok'}, status.HTTP_201_CREATED
 
 
 class ModifyTodo(View):
@@ -242,6 +322,21 @@ def todo_list():
             schema.serialize(todo)
             for todo in
             todos
+        ]
+    }
+
+
+@server_app.route('/tag/', methods = ['GET'])
+def tag_list():
+    tags: t.List[models.Tag] = session.query(models.Tag).order_by(models.Tag.created_at.desc())
+
+    schema = TagSchema()
+
+    return {
+        'tags': [
+            schema.serialize(tag)
+            for tag in
+            tags
         ]
     }
 

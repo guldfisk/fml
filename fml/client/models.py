@@ -173,12 +173,14 @@ class ToDo(RemoteModel):
         created_at: datetime.datetime,
         finished_at: t.Optional[datetime.datetime],
         canceled: bool,
+        tags: t.Sequence[str],
     ):
         super().__init__(pk)
         self._text = text
         self._created_at = created_at
         self._finished_at = finished_at
         self._canceled = canceled
+        self._tags = tags
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> ToDo:
@@ -192,6 +194,7 @@ class ToDo(RemoteModel):
                 None
             ),
             canceled = remote['canceled'],
+            tags = remote['tags'],
         )
 
     @property
@@ -209,6 +212,10 @@ class ToDo(RemoteModel):
     @property
     def canceled(self) -> bool:
         return self._canceled
+
+    @property
+    def tags(self) -> t.Sequence[str]:
+        return self._tags
 
     @property
     def status(self) -> str:
