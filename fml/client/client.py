@@ -416,7 +416,7 @@ def new_alarm(
     seconds: int = 0,
     minutes: int = 0,
     hours: int = 0,
-    retry_delay: int = 0,
+    retry_delay: int = 60,
     mail: bool = False,
     silent: bool = False,
     requires_acknowledgement: bool = False,
@@ -568,7 +568,7 @@ def finish_todo(target: str) -> None:
 )
 @click.option('--limit', '-l', default = 25, type = int, help = 'Limit.')
 @click.option('--project', '-p', type = str, help = 'Project.')
-@click.option('--tag', '-t', type = str, help = 'Project.')
+@click.option('--tag', '-t', type = str, help = 'Filter on tag.')
 def list_todos(
     history: bool = False,
     limit: int = 25,
@@ -616,7 +616,7 @@ def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, floa
     help = 'Output to window instead of terminal',
 )
 @click.option('--project', '-p', type = str, help = 'Project.')
-@click.option('--tag', '-t', type = str, help = 'Project.')
+@click.option('--tag', '-t', type = str, help = 'Filter on tag.')
 def todos_burn_down(
     chart: bool = False,
     project: t.Optional[str] = None,
@@ -642,7 +642,7 @@ def todos_burn_down(
     help = 'Output to window instead of terminal',
 )
 @click.option('--project', '-p', type = str, help = 'Project.')
-@click.option('--tag', '-t', type = str, help = 'Project.')
+@click.option('--tag', '-t', type = str, help = 'Filter on Tag.')
 def todos_throughput(
     chart: bool = False,
     project: t.Optional[str] = None,
