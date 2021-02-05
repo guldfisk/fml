@@ -27,6 +27,13 @@ class AlarmSchema(Schema[models.Alarm]):
     success = fields.Bool(read_only = True)
 
 
+class ProjectSchema(Schema[models.Project]):
+    id = fields.Integer(read_only = True)
+    name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
+    created_at = fields.Datetime(read_only = True)
+    is_default = fields.Bool(default = False)
+
+
 class TaggedSchema(Schema[models.Tagged]):
     todo_id = fields.CoalesceField([fields.Integer(), fields.Text()])
     tag_id = fields.CoalesceField([fields.Integer(), fields.Text()])
@@ -38,7 +45,7 @@ class TagSchema(Schema[models.Tag]):
     created_at = fields.Datetime(read_only = True)
 
 
-class TagsSchema(Schema):
+class CreateTodoSchema(Schema):
     tags = fields.List(
         fields.CoalesceField(
             [
@@ -48,6 +55,13 @@ class TagsSchema(Schema):
         ),
         default = (),
     )
+    project = fields.CoalesceField(
+        [
+            fields.Integer(),
+            fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+')),
+        ],
+        required = False,
+    )
 
 
 class ToDoSchema(Schema[models.ToDo]):
@@ -56,6 +70,7 @@ class ToDoSchema(Schema[models.ToDo]):
     text = fields.Text()
 
     tags = fields.Lambda(lambda todo: [tag.name for tag in todo.tags])
+    project = fields.Lambda(lambda todo: todo.project.name)
 
     created_at = fields.Datetime(read_only = True)
     finished_at = fields.Datetime(read_only = True)

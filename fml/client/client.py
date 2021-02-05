@@ -8,6 +8,9 @@ import gnuplotlib as gp
 import numpy as np
 from texttable import Texttable
 
+from pkg_resources import iter_entry_points
+from click_plugins import with_plugins
+
 from fml.client import models
 from fml.client.dateparse import parse_datetime, DateParseException
 from fml.client.utils import format_timedelta
@@ -127,9 +130,32 @@ class Client(object):
             self._make_request('alarms/acknowledge/', 'PATCH')['alarms']
         ]
 
+    def create_project(
+        self,
+        name: str,
+    ) -> models.Project:
+        return models.Project.from_remote(
+            self._make_request(
+                'project/',
+                'POST',
+                {
+                    'name': name,
+                    'is_default': False,
+                }
+            )
+        )
+
+    def list_projects(self, limit: t.Optional[int] = 25) -> t.Sequence[models.Project]:
+        return [
+            models.Project.from_remote(project)
+            for project in
+            self._make_request('project/', limit = limit)['projects']
+        ]
+
     def new_todo(
         self,
         text: str,
+        project: t.Optional[str] = None,
         tags: t.Collection[str] = (),
     ) -> models.ToDo:
         return models.ToDo.from_remote(
@@ -138,6 +164,7 @@ class Client(object):
                 'POST',
                 {
                     'text': text,
+                    'project': project,
                     'tags': tags,
                 }
             )
@@ -161,38 +188,68 @@ class Client(object):
             )
         )
 
-    def active_todos(self) -> t.Sequence[models.ToDo]:
+    def active_todos(
+        self,
+        project: t.Optional[str] = None,
+        tag: t.Optional[str] = None,
+    ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
             for todo in
-            self._make_request('todo/')['todos']
+            self._make_request('todo/', project = project, tag = tag)['todos']
         ]
 
-    def todo_history(self, limit: t.Optional[int] = 25) -> t.Sequence[models.ToDo]:
+    def todo_history(
+        self,
+        limit: t.Optional[int] = 25,
+        project: t.Optional[str] = None,
+        tag: t.Optional[str] = None,
+    ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
             for todo in
-            self._make_request('todo/history/', limit = limit)['todos']
+            self._make_request(
+                'todo/history/',
+                limit = limit,
+                project = project,
+                tag = tag,
+            )['todos']
         ]
 
-    def todo_burn_down(self) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
+    def todo_burn_down(
+        self,
+        project: t.Optional[str] = None,
+        tag: t.Optional[str] = None,
+    ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
                 datetime.datetime.strptime(date, models.DATETIME_FORMAT),
                 active_todos,
             )
             for date, active_todos in
-            self._make_request('todo/burn-down/')['points']
+            self._make_request(
+                'todo/burn-down/',
+                project = project,
+                tag = tag,
+            )['points']
         ]
 
-    def todo_throughput(self) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
+    def todo_throughput(
+        self,
+        project: t.Optional[str] = None,
+        tag: t.Optional[str] = None,
+    ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
                 datetime.datetime.strptime(date, models.DATETIME_FORMAT),
                 throughput,
             )
             for date, throughput in
-            self._make_request('todo/throughput/')['points']
+            self._make_request(
+                'todo/throughput/',
+                project = project,
+                tag = tag,
+            )['points']
         ]
 
     def list_tags(self) -> t.Sequence[str]:
@@ -220,6 +277,33 @@ class Client(object):
                 'tag_id': tag,
             }
         )
+
+
+def print_projects(project: t.Sequence[models.Project]) -> None:
+    table = Texttable()
+    table.set_deco(Texttable.HEADER)
+    table.set_max_width(180)
+    table.header(
+        ['ID', 'Name', 'Created At', 'Is Default']
+    )
+    table.add_rows(
+        [
+            [
+                project.pk,
+                project.name,
+                project.created_at.strftime(models.DATETIME_FORMAT),
+                str(project.is_default),
+            ]
+            for project in
+            project
+        ],
+        header = False,
+    )
+    print(table.draw())
+
+
+def print_project(project: models.Project) -> None:
+    print_projects((project,))
 
 
 def print_alarm(alarm: models.Alarm) -> None:
@@ -262,7 +346,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Tags']
+        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Tags', 'Project']
     )
     table.add_rows(
         [
@@ -275,6 +359,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
                 format_timedelta(todo.duration) if todo.finished_at else '-',
                 todo.status,
                 ', '.join(todo.tags),
+                todo.project,
             ]
             for todo in
             todos
@@ -284,8 +369,9 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     print(table.draw())
 
 
+@with_plugins(iter_entry_points('click_command_tree'))
 @click.group()
-def main():
+def main() -> None:
     """
     Keep track of stuff and such.
     """
@@ -293,7 +379,7 @@ def main():
 
 
 @main.group('alarm')
-def alarm_service():
+def alarm_service() -> None:
     """
     Timed alarms.
     """
@@ -310,7 +396,7 @@ def alarm_service():
     '--retry-delay',
     default = 60,
     type = int,
-    help = 'Delay in seconds for re-notification delay. Only relevant when ackowledgement is required.',
+    help = 'Delay in seconds for re-notification delay. Only relevant when acknowledgment is required.',
 )
 @click.option('--mail', default = False, type = bool, is_flag = True, show_default = True, help = 'Also send email.')
 @click.option('--silent', default = False, type = bool, is_flag = True, show_default = True,
@@ -334,7 +420,7 @@ def new_alarm(
     mail: bool = False,
     silent: bool = False,
     requires_acknowledgement: bool = False,
-):
+) -> None:
     """
     Create new alarm.
     """
@@ -375,7 +461,7 @@ def new_alarm(
     help = 'Include all alarms, not just active ones.',
 )
 @click.option('--limit', '-l', default = 10, type = int, help = 'Limit.')
-def list_alarms(history: bool = False, limit: int = 10):
+def list_alarms(history: bool = False, limit: int = 10) -> None:
     """
     List active alarms.
     """
@@ -386,7 +472,7 @@ def list_alarms(history: bool = False, limit: int = 10):
 
 @alarm_service.command(name = 'cancel')
 @click.argument('target', type = str)
-def cancel_alarms(target: str):
+def cancel_alarms(target: str) -> None:
     """
     Cancel alarms with id. "all" for cancelling all active alarms.
     """
@@ -405,7 +491,7 @@ def cancel_alarms(target: str):
 
 @alarm_service.command(name = 'ack')
 @click.argument('target', type = str)
-def acknowledge_alarms(target: str):
+def acknowledge_alarms(target: str) -> None:
     """
     Acknowledge alarm requiring acknowledgement. You can only acknowledge commands after their target time.
     Target is either id of alarm or "all" for all acknowledgeable alarms.
@@ -424,7 +510,7 @@ def acknowledge_alarms(target: str):
 
 
 @main.group('todo')
-def todo_service():
+def todo_service() -> None:
     """
     Keep track of stuff to do.
     """
@@ -433,17 +519,20 @@ def todo_service():
 
 @todo_service.command(name = 'new')
 @click.argument('text', type = str, required = True, nargs = -1)
+@click.option('--project', '-p', type = str, help = 'Project.')
 @click.option('--tags', '-t', default = (), type = str, help = 'Tags.', multiple = True)
 def new_todo(
     text: t.Sequence[str],
+    project: str,
     tags: t.Sequence[str],
-):
+) -> None:
     """
     Create new todo.
     """
     print_todo(
         Client().new_todo(
             ' '.join(text),
+            project = project,
             tags = tags,
         )
     )
@@ -451,7 +540,7 @@ def new_todo(
 
 @todo_service.command(name = 'cancel')
 @click.argument('target', type = str)
-def cancel_todo(target: str):
+def cancel_todo(target: str) -> None:
     """
     Cancel todo. Target is either id or partial text of todo.
     """
@@ -460,7 +549,7 @@ def cancel_todo(target: str):
 
 @todo_service.command(name = 'finish')
 @click.argument('target', type = str)
-def finish_todo(target: str):
+def finish_todo(target: str) -> None:
     """
     Finish todo. Target is either id or partial text of todo.
     """
@@ -478,16 +567,29 @@ def finish_todo(target: str):
     help = 'Include non-pending todos.'
 )
 @click.option('--limit', '-l', default = 25, type = int, help = 'Limit.')
-def list_todos(history: bool = False, limit: int = 25):
+@click.option('--project', '-p', type = str, help = 'Project.')
+@click.option('--tag', '-t', type = str, help = 'Project.')
+def list_todos(
+    history: bool = False,
+    limit: int = 25,
+    project: t.Optional[str] = None,
+    tag: t.Optional[str] = None,
+) -> None:
     """
     List pending todos.
     """
     print_todos(
-        Client().todo_history(limit = limit) if history else Client().active_todos()
+        Client().todo_history(project = project, limit = limit, tag = tag)
+        if history else
+        Client().active_todos(project = project, tag = tag)
     )
 
 
 def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]], chart: bool = False) -> None:
+    if not points:
+        print('No data')
+        return
+
     args = {
         'unset': 'grid',
         'set': ('xdata time', 'format x "%d/%m/%y"'),
@@ -513,12 +615,18 @@ def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, floa
     show_default = True,
     help = 'Output to window instead of terminal',
 )
-def todos_burn_down(chart: bool = False):
+@click.option('--project', '-p', type = str, help = 'Project.')
+@click.option('--tag', '-t', type = str, help = 'Project.')
+def todos_burn_down(
+    chart: bool = False,
+    project: t.Optional[str] = None,
+    tag: t.Optional[str] = None,
+) -> None:
     """
     Show todo burndown chart.
     """
     _show_points(
-        Client().todo_burn_down(),
+        Client().todo_burn_down(project = project, tag = tag),
         chart,
     )
 
@@ -533,18 +641,24 @@ def todos_burn_down(chart: bool = False):
     show_default = True,
     help = 'Output to window instead of terminal',
 )
-def todos_throughput(chart: bool = False):
+@click.option('--project', '-p', type = str, help = 'Project.')
+@click.option('--tag', '-t', type = str, help = 'Project.')
+def todos_throughput(
+    chart: bool = False,
+    project: t.Optional[str] = None,
+    tag: t.Optional[str] = None,
+) -> None:
     """
-    Show todo thoughput chart.
+    Show todo throughput chart.
     """
     _show_points(
-        Client().todo_throughput(),
+        Client().todo_throughput(project = project, tag = tag),
         chart,
     )
 
 
 @todo_service.group('tag')
-def tag_service():
+def tag_service() -> None:
     """
     Todo tags.
     """
@@ -552,7 +666,7 @@ def tag_service():
 
 
 @tag_service.command(name = 'list')
-def list_tags():
+def list_tags() -> None:
     """
     List tags.
     """
@@ -562,9 +676,9 @@ def list_tags():
 
 @tag_service.command(name = 'new')
 @click.argument('tag', type = str, required = True)
-def tag_todo(
+def create_tag(
     tag: str,
-):
+) -> None:
     """
     Create a new tag
     """
@@ -578,12 +692,43 @@ def tag_todo(
 def tag_todo(
     todo: str,
     tag: str,
-):
+) -> None:
     """
     Tag todo.
     """
     Client().tag_todo(todo, tag)
     print('ok')
+
+
+@todo_service.group('project')
+def project_service() -> None:
+    """
+    Todo projects.
+    """
+    pass
+
+
+@project_service.command(name = 'list')
+def list_tags() -> None:
+    """
+    List projects.
+    """
+    print_projects(
+        Client().list_projects()
+    )
+
+
+@project_service.command(name = 'new')
+@click.argument('name', type = str, required = True)
+def create_tag(
+    name: str,
+) -> None:
+    """
+    Create a new tag
+    """
+    print_project(
+        Client().create_project(name)
+    )
 
 
 if __name__ == '__main__':

@@ -1,4 +1,5 @@
 import datetime
+import functools
 import typing as t
 
 from flask import request, Flask
@@ -26,6 +27,35 @@ DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
 server_app: Flask = FlaskAPI(__name__)
 session: Session = flask_scoped_session(session_factory, server_app)
 request: APIRequest
+
+
+def inject_project(f: t.Callable):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        project_id = models.Project.get_for_identifier(
+            session,
+            request.args.get('project'),
+        )
+
+        if project_id is None:
+            return 'Invalid project', status.HTTP_400_BAD_REQUEST
+
+        return f(*args, project_id = project_id, **kwargs)
+
+    return wrapper
+
+
+def inject_tag(f: t.Callable):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        tag_id = models.Tag.get_for_identifier(
+            session,
+            request.args.get('tag'),
+        )
+
+        return f(*args, tag_id = tag_id, **kwargs)
+
+    return wrapper
 
 
 @server_app.route('/', methods = ['GET'])
@@ -134,16 +164,77 @@ def acknowledge_alarms():
     }
 
 
+@server_app.route('/project/', methods = ['POST'])
+def create_project():
+    schema = schemas.ProjectSchema()
+
+    try:
+        project = schema.deserialize(request.data)
+    except DeserializationError as e:
+        return e.serialized, status.HTTP_400_BAD_REQUEST
+
+    if project.is_default:
+        session.query(models.Project).update({models.Project.is_default: False}, synchronize_session = False)
+
+    session.add(project)
+
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        return 'Project already exists', status.HTTP_400_BAD_REQUEST
+
+    return schema.serialize(project)
+
+
+@server_app.route('/project/', methods = ['GET'])
+def project_list():
+    projects: t.List[models.ToDo] = session.query(models.Project).order_by(models.Project.created_at.desc())
+
+    schema = schemas.ProjectSchema()
+
+    return {
+        'projects': [
+            schema.serialize(project)
+            for project in
+            projects
+        ]
+    }
+
+
 @server_app.route('/todo/', methods = ['POST'])
 def create_todo():
     schema = ToDoSchema()
 
     try:
-        todo = schema.deserialize(request.data)
+        todo_data = schema.deserialize_raw(request.data)
+        create_data = schemas.CreateTodoSchema().deserialize_raw(request.data)
     except DeserializationError as e:
         return e.serialized, status.HTTP_400_BAD_REQUEST
 
-    for tag in schemas.TagsSchema().deserialize_raw(request.data)['tags']:
+    project = create_data.get('project')
+
+    if not project:
+        todo_data['project_id'] = session.query(models.Project.id).filter(models.Project.is_default == True).scalar()
+    else:
+        if isinstance(project, int):
+            _project = session.query(models.Project.id).get(project)
+        else:
+            try:
+                _project = session.query(models.Project.id).filter(
+                    models.Project.name.contains(project)
+                ).scalar()
+            except MultipleResultsFound:
+                return 'ambiguous project "{}"'.format(project), status.HTTP_400_BAD_REQUEST
+
+            if _project is None:
+                return 'unknown project "{}"'.format(project), status.HTTP_400_BAD_REQUEST
+
+            todo_data['project_id'] = _project
+
+    todo = models.ToDo(**todo_data)
+
+    for tag in create_data['tags']:
         if isinstance(tag, int):
             _tag = session.query(models.Tag).get(tag)
         else:
@@ -155,7 +246,7 @@ def create_todo():
                 return 'ambiguous tag "{}"'.format(tag), status.HTTP_400_BAD_REQUEST
 
         if _tag is None:
-            return 'unknown tag "{}"'.format(tag), status.HTTP_404_NOT_FOUND
+            return 'unknown tag "{}"'.format(tag), status.HTTP_400_BAD_REQUEST
 
         todo.tags.append(_tag)
 
@@ -295,10 +386,19 @@ def get_todo(pk: int):
 
 
 @server_app.route('/todo/history/', methods = ['GET'])
-def todo_history():
+@inject_project
+@inject_tag
+def todo_history(project_id: int, tag_id: t.Optional[int]):
     limit = request.args.get('limit')
 
-    todos: t.List[models.ToDo] = session.query(models.ToDo).order_by(models.ToDo.created_at.desc()).limit(limit)
+    todos = session.query(models.ToDo).filter(
+        models.ToDo.project_id == project_id
+    ).order_by(models.ToDo.created_at.desc())
+
+    if tag_id is not None:
+        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
+
+    todos = todos.limit(limit)
 
     schema = ToDoSchema()
 
@@ -312,8 +412,15 @@ def todo_history():
 
 
 @server_app.route('/todo/', methods = ['GET'])
-def todo_list():
-    todos: t.List[models.ToDo] = models.ToDo.active_todos(session).order_by(models.ToDo.created_at.desc())
+@inject_project
+@inject_tag
+def todo_list(project_id: int, tag_id: t.Optional[int]):
+    todos = models.ToDo.active_todos(session).filter(
+        models.ToDo.project_id == project_id
+    ).order_by(models.ToDo.created_at.desc())
+
+    if tag_id is not None:
+        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
 
     schema = ToDoSchema()
 
@@ -342,8 +449,15 @@ def tag_list():
 
 
 @server_app.route('/todo/burn-down/', methods = ['GET'])
-def todo_burn_down():
-    todos: t.List[models.ToDo] = list(session.query(models.ToDo))
+@inject_project
+@inject_tag
+def todo_burn_down(project_id: int, tag_id = t.Optional[int]):
+    todos = session.query(models.ToDo).filter(models.ToDo.project_id == project_id)
+
+    if tag_id is not None:
+        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
+
+    todos = list(todos)
 
     if not todos:
         return {
@@ -379,15 +493,28 @@ def todo_burn_down():
 
 
 @server_app.route('/todo/throughput/', methods = ['GET'])
-def todo_throughput():
+@inject_project
+@inject_tag
+def todo_throughput(project_id: int, tag_id: t.Optional[int]):
+    todos = session.query(models.ToDo.finished_at).filter(
+        models.ToDo.canceled == False,
+        models.ToDo.finished_at != None,
+        models.ToDo.project_id == project_id,
+    ).order_by(models.ToDo.finished_at)
+
+    if tag_id is not None:
+        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
+
     finished_dates = [
         v[0].date()
         for v in
-        session.query(models.ToDo.finished_at).filter(
-            models.ToDo.canceled == False,
-            models.ToDo.finished_at != None,
-        ).order_by(models.ToDo.finished_at)
+        todos
     ]
+
+    if not finished_dates:
+        return {
+            'points': [],
+        }
 
     finished_dates_map = [
         0

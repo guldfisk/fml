@@ -38,5 +38,7 @@ setup(
         'gnuplotlib',
         'numpy',
         'alembic',
+        'click-plugins',
+        'click-command-tree',
     ]
 )

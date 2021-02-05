@@ -8,6 +8,7 @@ from sqlalchemy import Integer, String, Boolean, Enum, DateTime, Column, or_, an
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, Query, relationship
+from sqlalchemy.orm.exc import MultipleResultsFound
 
 
 Base = declarative_base()
@@ -93,13 +94,55 @@ class Tagged(Base):
     __table_args__ = (UniqueConstraint('tag_id', 'todo_id'),)
 
 
-class Tag(Base):
+class StringIdentified(Base):
+    __abstract__ = True
+    id: Column[Integer]
+    name: Column[String]
+
+    @classmethod
+    def get_for_no_identifier(cls, session: Session) -> t.Optional[int]:
+        return None
+
+    @classmethod
+    def get_for_identifier(cls, session: Session, identifier: t.Union[str, int, None]) -> t.Optional[int]:
+        if not identifier:
+            return cls.get_for_no_identifier(session)
+        if isinstance(identifier, int):
+            return session.query(cls.id).get(cls.id)
+        try:
+            return session.query(cls.id).filter(
+                cls.name.contains(identifier)
+            ).scalar()
+        except MultipleResultsFound:
+            return None
+
+
+class Tag(StringIdentified):
     __tablename__ = 'tag'
 
     id = Column(Integer, primary_key = True)
     name = Column(String(127), unique = True)
     todos: t.Sequence[ToDo] = relationship('ToDo', back_populates = 'tags', secondary = Tagged.__table__)
     created_at = Column(DateTime, default = datetime.datetime.now)
+
+
+class Project(StringIdentified):
+    __tablename__ = 'project'
+
+    id = Column(Integer, primary_key = True)
+    name = Column(String(127), unique = True)
+    created_at = Column(DateTime, default = datetime.datetime.now)
+    is_default = Column(Boolean, default = False)
+
+    todos = relationship(
+        'ToDo',
+        back_populates = 'project',
+        cascade = 'all, delete-orphan',
+    )
+
+    @classmethod
+    def get_for_no_identifier(cls, session: Session) -> t.Optional[int]:
+        return session.query(cls.id).filter(cls.is_default == True).scalar()
 
 
 class ToDo(Base):
@@ -112,6 +155,13 @@ class ToDo(Base):
     created_at = Column(DateTime, default = datetime.datetime.now)
     finished_at = Column(DateTime, nullable = True)
     canceled = Column(Boolean, default = False)
+
+    project_id = Column(
+        Integer,
+        ForeignKey('project.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+    project = relationship('Project', back_populates = 'todos')
 
     tags: t.Sequence[Tag] = relationship(
         'Tag',

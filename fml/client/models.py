@@ -164,6 +164,42 @@ class Alarm(RemoteModel):
         return max(datetime.datetime.now() - self._started_at, datetime.timedelta(seconds = 0))
 
 
+class Project(RemoteModel):
+
+    def __init__(
+        self,
+        pk: int,
+        name: str,
+        created_at: datetime.datetime,
+        is_default: bool = True
+    ):
+        super().__init__(pk)
+        self._name = name
+        self._created_at = created_at
+        self._is_default = is_default
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def created_at(self) -> datetime.datetime:
+        return self._created_at
+
+    @property
+    def is_default(self) -> bool:
+        return self._is_default
+
+    @classmethod
+    def from_remote(cls, remote: Serialized) -> Project:
+        return cls(
+            pk = remote['id'],
+            name = remote['name'],
+            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
+            is_default = remote['is_default'],
+        )
+
+
 class ToDo(RemoteModel):
 
     def __init__(
@@ -174,6 +210,7 @@ class ToDo(RemoteModel):
         finished_at: t.Optional[datetime.datetime],
         canceled: bool,
         tags: t.Sequence[str],
+        project: str,
     ):
         super().__init__(pk)
         self._text = text
@@ -181,6 +218,7 @@ class ToDo(RemoteModel):
         self._finished_at = finished_at
         self._canceled = canceled
         self._tags = tags
+        self._project = project
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> ToDo:
@@ -195,6 +233,7 @@ class ToDo(RemoteModel):
             ),
             canceled = remote['canceled'],
             tags = remote['tags'],
+            project = remote['project'],
         )
 
     @property
@@ -216,6 +255,10 @@ class ToDo(RemoteModel):
     @property
     def tags(self) -> t.Sequence[str]:
         return self._tags
+
+    @property
+    def project(self) -> str:
+        return self._project
 
     @property
     def status(self) -> str:
