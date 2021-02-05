@@ -10,7 +10,8 @@ from flask_api.request import APIRequest
 
 from flask_sqlalchemy_session import flask_scoped_session
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import exists
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import MultipleResultsFound
 
@@ -250,6 +251,13 @@ def create_todo():
 
         todo.tags.append(_tag)
 
+    for parent in create_data['parents']:
+        parent = models.ToDo.get_for_identifier(session, parent, base_query = models.ToDo.active_todos(session))
+        if parent is None:
+            return 'Invalid parent', status.HTTP_400_BAD_REQUEST
+
+        todo.parents.append(parent)
+
     session.add(todo)
 
     session.commit()
@@ -286,37 +294,73 @@ def tag_todo():
     except DeserializationError as e:
         return e.serialized, status.HTTP_400_BAD_REQUEST
 
-    if isinstance(tagged['todo_id'], int):
-        todo_id = tagged['todo_id']
-    else:
-        try:
-            todo_id = models.ToDo.active_todos(session, target = models.ToDo.id).filter(
-                models.ToDo.text.contains(tagged['todo_id'])
-            ).scalar()
-        except MultipleResultsFound:
-            return 'ambiguous todo', status.HTTP_400_BAD_REQUEST
+    todo: t.Optional[models.ToDo] = models.ToDo.get_for_identifier(
+        session,
+        tagged['todo_id'],
+        base_query = models.ToDo.active_todos(session),
+    )
 
-    if isinstance(tagged['tag_id'], int):
-        tag_id = tagged['tag_id']
-    else:
-        try:
-            tag_id = session.query(models.Tag.id).filter(
-                models.Tag.name.contains(tagged['tag_id'])
-            ).scalar()
-        except MultipleResultsFound:
-            return 'ambiguous tag', status.HTTP_400_BAD_REQUEST
+    if todo is None:
+        return 'Invalid todo', status.HTTP_400_BAD_REQUEST
 
-    tag = models.Tagged(todo_id = todo_id, tag_id = tag_id)
+    tag: t.Optional[models.Tag] = models.Tag.get_for_identifier(
+        session,
+        tagged['tag_id'],
+        target = models.Tag,
+    )
 
-    session.add(tag)
+    if tag is None:
+        return 'Invalid tag', status.HTTP_400_BAD_REQUEST
+
+    todo.tags.append(tag)
+
+    if tagged['recursive']:
+        for child in todo.traverse_children():
+            child.tags.append(tag)
 
     try:
         session.commit()
-    except IntegrityError:
+    except (IntegrityError, OperationalError):
         session.rollback()
         return 'Invalid args', status.HTTP_400_BAD_REQUEST
 
     return {'status': 'ok'}, status.HTTP_201_CREATED
+
+
+@server_app.route('/todo/add-dependency/', methods = ['POST'])
+def add_dependency():
+    parent: t.Optional[models.ToDo] = models.ToDo.get_for_identifier(
+        session,
+        request.data.get('parent'),
+        base_query = models.ToDo.active_todos(session),
+    )
+
+    if parent is None:
+        return 'Invalid parent', status.HTTP_400_BAD_REQUEST
+
+    child: t.Optional[models.ToDo] = models.ToDo.get_for_identifier(
+        session,
+        request.data.get('child'),
+        base_query = models.ToDo.active_todos(session),
+    )
+
+    if child is None:
+        return 'Invalid child', status.HTTP_400_BAD_REQUEST
+
+    if parent in child.traverse_children(active_only = False):
+        return 'Dependencies can not be circular', status.HTTP_400_BAD_REQUEST
+
+    dependency = models.Dependency(parent_id = parent.id, child_id = child.id)
+
+    session.add(dependency)
+
+    try:
+        session.commit()
+    except (IntegrityError, OperationalError):
+        session.rollback()
+        return 'Invalid args', status.HTTP_400_BAD_REQUEST
+
+    return schemas.ToDoSchema().serialize(parent), status.HTTP_201_CREATED
 
 
 class ModifyTodo(View):
@@ -346,10 +390,10 @@ class ModifyTodo(View):
         if todo is None:
             return 'no such todo', status.HTTP_404_NOT_FOUND
 
-        v = self._modify_todo(todo)
+        self._modify_todo(todo)
 
-        if isinstance(v, t.Tuple):
-            return v
+        for child in todo.traverse_children(active_only = False):
+            self._modify_todo(child)
 
         session.commit()
 
@@ -392,7 +436,8 @@ def todo_history(project_id: int, tag_id: t.Optional[int]):
     limit = request.args.get('limit')
 
     todos = session.query(models.ToDo).filter(
-        models.ToDo.project_id == project_id
+        models.ToDo.project_id == project_id,
+        ~exists().where(models.Dependency.child_id == models.ToDo.id),
     ).order_by(models.ToDo.created_at.desc())
 
     if tag_id is not None:
@@ -400,7 +445,7 @@ def todo_history(project_id: int, tag_id: t.Optional[int]):
 
     todos = todos.limit(limit)
 
-    schema = ToDoSchema()
+    schema = schemas.AllChildrenToDoSchema()
 
     return {
         'todos': [
@@ -416,13 +461,14 @@ def todo_history(project_id: int, tag_id: t.Optional[int]):
 @inject_tag
 def todo_list(project_id: int, tag_id: t.Optional[int]):
     todos = models.ToDo.active_todos(session).filter(
-        models.ToDo.project_id == project_id
+        ~exists().where(models.Dependency.child_id == models.ToDo.id),
+        models.ToDo.project_id == project_id,
     ).order_by(models.ToDo.created_at.desc())
 
     if tag_id is not None:
         todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
 
-    schema = ToDoSchema()
+    schema = schemas.ToDoSchema()
 
     return {
         'todos': [

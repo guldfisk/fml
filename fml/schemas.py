@@ -37,6 +37,7 @@ class ProjectSchema(Schema[models.Project]):
 class TaggedSchema(Schema[models.Tagged]):
     todo_id = fields.CoalesceField([fields.Integer(), fields.Text()])
     tag_id = fields.CoalesceField([fields.Integer(), fields.Text()])
+    recursive = fields.Bool(default = False, write_only = True)
 
 
 class TagSchema(Schema[models.Tag]):
@@ -62,6 +63,15 @@ class CreateTodoSchema(Schema):
         ],
         required = False,
     )
+    parents = fields.List(
+        fields.CoalesceField(
+            [
+                fields.Integer(),
+                fields.Text(),
+            ]
+        ),
+        default = (),
+    )
 
 
 class ToDoSchema(Schema[models.ToDo]):
@@ -76,3 +86,9 @@ class ToDoSchema(Schema[models.ToDo]):
     finished_at = fields.Datetime(read_only = True)
 
     canceled = fields.Bool(read_only = True)
+
+    children = fields.List(fields.SelfRelated(), read_only = True, source = 'active_children')
+
+
+class AllChildrenToDoSchema(ToDoSchema):
+    children = fields.List(fields.SelfRelated(), read_only = True)

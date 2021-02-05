@@ -211,6 +211,8 @@ class ToDo(RemoteModel):
         canceled: bool,
         tags: t.Sequence[str],
         project: str,
+        children: t.Optional[t.Sequence[ToDo]] = None,
+        parents: t.Optional[t.Sequence[ToDo]] = None,
     ):
         super().__init__(pk)
         self._text = text
@@ -219,6 +221,8 @@ class ToDo(RemoteModel):
         self._canceled = canceled
         self._tags = tags
         self._project = project
+        self._children = children
+        self._parents = parents
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> ToDo:
@@ -234,6 +238,8 @@ class ToDo(RemoteModel):
             canceled = remote['canceled'],
             tags = remote['tags'],
             project = remote['project'],
+            children = [cls.from_remote(child) for child in remote['children']] if 'children' in remote else None,
+            parents = [cls.from_remote(parent) for parent in remote['parents']] if 'parents' in remote else None,
         )
 
     @property
@@ -259,6 +265,16 @@ class ToDo(RemoteModel):
     @property
     def project(self) -> str:
         return self._project
+
+    @property
+    def children(self) -> t.Sequence[ToDo]:
+        if self._children is None:
+            return []
+        return self._children
+
+    @property
+    def parents(self) -> t.Sequence[ToDo]:
+        return self._parents
 
     @property
     def status(self) -> str:

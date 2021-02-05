@@ -7,7 +7,7 @@ from enum import Enum as _Enum
 from sqlalchemy import Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_, ForeignKey, UniqueConstraint
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, Query, relationship
+from sqlalchemy.orm import Session, Query, relationship, backref, synonym
 from sqlalchemy.orm.exc import MultipleResultsFound
 
 
@@ -97,21 +97,29 @@ class Tagged(Base):
 class StringIdentified(Base):
     __abstract__ = True
     id: Column[Integer]
-    name: Column[String]
+
+    text_identifier: Column[String]
 
     @classmethod
-    def get_for_no_identifier(cls, session: Session) -> t.Optional[int]:
+    def get_for_no_identifier(cls, session: Session, target) -> t.Optional[int]:
         return None
 
     @classmethod
-    def get_for_identifier(cls, session: Session, identifier: t.Union[str, int, None]) -> t.Optional[int]:
+    def get_for_identifier(
+        cls, session: Session,
+        identifier: t.Union[str, int, None],
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.Optional[int]:
+        target = target or cls.id
+        base_query = session.query(target) if base_query is None else base_query
         if not identifier:
-            return cls.get_for_no_identifier(session)
+            return cls.get_for_no_identifier(session, target = target)
         if isinstance(identifier, int):
-            return session.query(cls.id).get(cls.id)
+            return base_query.filter(cls.id == identifier).scalar()
         try:
-            return session.query(cls.id).filter(
-                cls.name.contains(identifier)
+            return base_query.filter(
+                cls.text_identifier.contains(identifier)
             ).scalar()
         except MultipleResultsFound:
             return None
@@ -124,6 +132,8 @@ class Tag(StringIdentified):
     name = Column(String(127), unique = True)
     todos: t.Sequence[ToDo] = relationship('ToDo', back_populates = 'tags', secondary = Tagged.__table__)
     created_at = Column(DateTime, default = datetime.datetime.now)
+
+    text_identifier = synonym('name')
 
 
 class Project(StringIdentified):
@@ -140,12 +150,32 @@ class Project(StringIdentified):
         cascade = 'all, delete-orphan',
     )
 
+    text_identifier = synonym('name')
+
     @classmethod
-    def get_for_no_identifier(cls, session: Session) -> t.Optional[int]:
-        return session.query(cls.id).filter(cls.is_default == True).scalar()
+    def get_for_no_identifier(cls, session: Session, target) -> t.Optional[int]:
+        return session.query(target).filter(cls.is_default == True).scalar()
 
 
-class ToDo(Base):
+class Dependency(Base):
+    __tablename__ = 'dependency'
+
+    id = Column(Integer, primary_key = True)
+    parent_id = Column(
+        Integer,
+        ForeignKey('todo.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+    child_id = Column(
+        Integer,
+        ForeignKey('todo.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+
+    __table_args__ = (UniqueConstraint('parent_id', 'child_id'),)
+
+
+class ToDo(StringIdentified):
     __tablename__ = 'todo'
 
     id = Column(Integer, primary_key = True)
@@ -169,8 +199,35 @@ class ToDo(Base):
         secondary = Tagged.__table__,
     )
 
+    parents = relationship(
+        'ToDo',
+        secondary = Dependency.__table__,
+        primaryjoin = id == Dependency.child_id,
+        secondaryjoin = id == Dependency.parent_id,
+        backref = backref('children'),
+    )
+
+    text_identifier = synonym('text')
+
+    @property
+    def active_children(self) -> t.Iterator[ToDo]:
+        for child in self.children:
+            if child.active:
+                yield child
+
+    def traverse_children(self, active_only: bool = True) -> t.Iterator[ToDo]:
+        for child in self.children:
+            if active_only and not child.active:
+                continue
+            yield child
+            yield from child.traverse_children()
+
     @property
     def cancelable(self) -> bool:
+        return not self.canceled and not self.finished_at
+
+    @property
+    def active(self) -> bool:
         return not self.canceled and not self.finished_at
 
     @classmethod

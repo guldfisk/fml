@@ -157,6 +157,7 @@ class Client(object):
         text: str,
         project: t.Optional[str] = None,
         tags: t.Collection[str] = (),
+        parents: t.Collection[str] = (),
     ) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
@@ -166,6 +167,7 @@ class Client(object):
                     'text': text,
                     'project': project,
                     'tags': tags,
+                    'parents': parents,
                 }
             )
         )
@@ -268,14 +270,32 @@ class Client(object):
             }
         )
 
-    def tag_todo(self, todo: t.Union[int, str], tag: t.Union[int, str]) -> None:
+    def tag_todo(
+        self,
+        todo: t.Union[int, str],
+        tag: t.Union[int, str],
+        recursive: bool = False,
+    ) -> None:
         self._make_request(
             'todo/tag/',
             method = 'POST',
             data = {
                 'todo_id': todo,
                 'tag_id': tag,
+                'recursive': recursive,
             }
+        )
+
+    def register_dependency(self, parent: t.Union[int, str], child: t.Union[int, str]) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/add-dependency/',
+                method = 'POST',
+                data = {
+                    'parent': parent,
+                    'child': child,
+                }
+            )
         )
 
 
@@ -341,6 +361,12 @@ def print_todo(todo: models.ToDo) -> None:
     print_todos((todo,))
 
 
+def iterate_todos(todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterator[t.Tuple[models.ToDo, int]]:
+    for todo in todos:
+        yield todo, indent
+        yield from iterate_todos(todo.children, indent + 1)
+
+
 def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     table = Texttable()
     table.set_deco(Texttable.HEADER)
@@ -352,7 +378,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
         [
             [
                 todo.pk,
-                todo.text,
+                '-|' * indent + todo.text,
                 todo.created_at.strftime(models.DATETIME_FORMAT),
                 todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
                 format_timedelta(todo.elapsed),
@@ -361,8 +387,8 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
                 ', '.join(todo.tags),
                 todo.project,
             ]
-            for todo in
-            todos
+            for todo, indent in
+            iterate_todos(todos)
         ],
         header = False,
     )
@@ -520,11 +546,13 @@ def todo_service() -> None:
 @todo_service.command(name = 'new')
 @click.argument('text', type = str, required = True, nargs = -1)
 @click.option('--project', '-p', type = str, help = 'Project.')
-@click.option('--tags', '-t', default = (), type = str, help = 'Tags.', multiple = True)
+@click.option('--tag', '-t', default = (), type = str, help = 'Tags.', multiple = True)
+@click.option('--parent', '-a', default = (), type = str, help = 'parent.', multiple = True)
 def new_todo(
     text: t.Sequence[str],
     project: str,
-    tags: t.Sequence[str],
+    tag: t.Sequence[str],
+    parent: t.Sequence[str],
 ) -> None:
     """
     Create new todo.
@@ -533,7 +561,8 @@ def new_todo(
         Client().new_todo(
             ' '.join(text),
             project = project,
-            tags = tags,
+            tags = tag,
+            parents = parent,
         )
     )
 
@@ -689,15 +718,40 @@ def create_tag(
 @tag_service.command(name = 'add')
 @click.argument('todo', type = str, required = True)
 @click.argument('tag', type = str, required = True)
+@click.option(
+    '--recursive',
+    '-r',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Add tag to all children recursivly.',
+)
 def tag_todo(
     todo: str,
     tag: str,
+    recursive: bool = False,
 ) -> None:
     """
     Tag todo.
     """
-    Client().tag_todo(todo, tag)
+    Client().tag_todo(todo, tag, recursive)
     print('ok')
+
+
+@todo_service.command(name = 'dep')
+@click.argument('parent', type = str, required = True)
+@click.argument('task', type = str, required = True)
+def tag_todo(
+    parent: str,
+    task: str,
+) -> None:
+    """
+    Register task as subtask of other task
+    """
+    print_todo(
+        Client().register_dependency(parent, task)
+    )
 
 
 @todo_service.group('project')
