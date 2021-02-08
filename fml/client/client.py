@@ -4,12 +4,7 @@ import datetime
 
 import requests
 import click
-import gnuplotlib as gp
-import numpy as np
 from texttable import Texttable
-
-from pkg_resources import iter_entry_points
-from click_plugins import with_plugins
 
 from fml.client import models
 from fml.client.dateparse import parse_datetime, DateParseException
@@ -395,7 +390,6 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     print(table.draw())
 
 
-@with_plugins(iter_entry_points('click_command_tree'))
 @click.group()
 def main() -> None:
     """
@@ -615,6 +609,9 @@ def list_todos(
 
 
 def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]], chart: bool = False) -> None:
+    import numpy as np
+    import gnuplotlib as gp
+
     if not points:
         print('No data')
         return

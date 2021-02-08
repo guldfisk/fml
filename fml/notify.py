@@ -5,7 +5,7 @@ import requests
 from playsound import playsound
 from pynotifier import Notification
 
-from fml import MAILGUN_KEY, MAILGUN_DOMAIN, EMAIL, paths
+from fml.server import MAILGUN_KEY, MAILGUN_DOMAIN, EMAIL, paths
 
 
 class AlarmSoundWorker(threading.Thread):

@@ -12,15 +12,15 @@ from flask_sqlalchemy_session import flask_scoped_session
 
 from sqlalchemy import exists
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm.exc import MultipleResultsFound
 
 from hardcandy.schema import DeserializationError
 
-from fml import schemas
-from fml import session_factory, models
-from fml.schemas import AlarmSchema, ToDoSchema, TagSchema, TaggedSchema
-from fml.timer import MANAGER
+from fml.server import schemas
+from fml.server import session_factory, models
+from fml.server.schemas import AlarmSchema, ToDoSchema, TagSchema, TaggedSchema
+from fml.server.timer import MANAGER
 
 
 DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
@@ -463,7 +463,7 @@ def todo_list(project_id: int, tag_id: t.Optional[int]):
     todos = models.ToDo.active_todos(session).filter(
         ~exists().where(models.Dependency.child_id == models.ToDo.id),
         models.ToDo.project_id == project_id,
-    ).order_by(models.ToDo.created_at.desc())
+    ).order_by(models.ToDo.created_at.desc()).options(joinedload('tags'), joinedload('children'))
 
     if tag_id is not None:
         todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)

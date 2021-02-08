@@ -2,9 +2,9 @@ import argparse
 
 from gevent.pywsgi import WSGIServer
 
-from fml import models, engine
-from fml.server import server_app
-from fml.timer import MANAGER
+from fml.server import models, engine
+from fml.server.server import server_app
+from fml.server.timer import MANAGER
 
 
 def run():
@@ -14,6 +14,7 @@ def run():
         action = 'store_true',
         default = False,
     )
+
     models.create(engine)
     MANAGER.check()
 

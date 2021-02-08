@@ -7,8 +7,8 @@ import datetime
 from sqlalchemy import not_, and_
 from sqlalchemy.orm import Session
 
-from fml import ScopedSession
-from fml.models import Alarm
+from fml.server import ScopedSession
+from fml.server.models import Alarm
 from fml import notify
 
 

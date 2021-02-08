@@ -3,7 +3,7 @@ import re
 from hardcandy import fields
 from hardcandy.schema import Schema
 
-from fml import models
+from fml.server import models
 
 
 class AlarmSchema(Schema[models.Alarm]):
