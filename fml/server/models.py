@@ -97,11 +97,10 @@ class Tagged(Base):
 class StringIdentified(Base):
     __abstract__ = True
     id: Column[Integer]
-
     text_identifier: Column[String]
 
     @classmethod
-    def get_for_no_identifier(cls, session: Session, target) -> t.Optional[int]:
+    def get_for_no_identifier(cls, session: Session, target = None) -> t.Optional[int]:
         return None
 
     @classmethod
@@ -110,8 +109,8 @@ class StringIdentified(Base):
         identifier: t.Union[str, int, None],
         target = None,
         base_query: t.Optional[Query] = None,
-    ) -> t.Optional[int]:
-        target = target or cls.id
+    ) -> t.Optional[StringIdentified]:
+        target = target or cls
         base_query = session.query(target) if base_query is None else base_query
         if not identifier:
             return cls.get_for_no_identifier(session, target = target)
@@ -153,8 +152,8 @@ class Project(StringIdentified):
     text_identifier = synonym('name')
 
     @classmethod
-    def get_for_no_identifier(cls, session: Session, target) -> t.Optional[int]:
-        return session.query(target).filter(cls.is_default == True).scalar()
+    def get_for_no_identifier(cls, session: Session, target = None) -> t.Optional[int]:
+        return session.query(target or cls).filter(cls.is_default == True).scalar()
 
 
 class Dependency(Base):

@@ -4,6 +4,7 @@ from hardcandy import fields
 from hardcandy.schema import Schema
 
 from fml.server import models
+from fml.server import fields as custom_fields
 
 
 class AlarmSchema(Schema[models.Alarm]):
@@ -74,6 +75,15 @@ class CreateTodoSchema(Schema):
     )
 
 
+class ToDoListOptions(Schema):
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
+    query = fields.Text(default = '')
+    all_tasks = fields.Bool(default = False)
+    flat = fields.Bool(default = False)
+    limit = fields.Integer(default = 25)
+
+
 class ToDoSchema(Schema[models.ToDo]):
     id = fields.Integer(read_only = True)
 
@@ -88,7 +98,3 @@ class ToDoSchema(Schema[models.ToDo]):
     canceled = fields.Bool(read_only = True)
 
     children = fields.List(fields.SelfRelated(), read_only = True, source = 'active_children')
-
-
-class AllChildrenToDoSchema(ToDoSchema):
-    children = fields.List(fields.SelfRelated(), read_only = True)

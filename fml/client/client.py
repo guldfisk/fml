@@ -189,11 +189,21 @@ class Client(object):
         self,
         project: t.Optional[str] = None,
         tag: t.Optional[str] = None,
+        query: t.Optional[str] = None,
+        all_tasks: bool = False,
+        flat: bool = False,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
             for todo in
-            self._make_request('todo/', project = project, tag = tag)['todos']
+            self._make_request(
+                'todo/',
+                project = project,
+                tag = tag,
+                query = query,
+                all_tasks = all_tasks,
+                flat = flat,
+            )['todos']
         ]
 
     def todo_history(
@@ -201,6 +211,9 @@ class Client(object):
         limit: t.Optional[int] = 25,
         project: t.Optional[str] = None,
         tag: t.Optional[str] = None,
+        query: t.Optional[str] = None,
+        all_tasks: bool = False,
+        flat: bool = False,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
@@ -210,6 +223,9 @@ class Client(object):
                 limit = limit,
                 project = project,
                 tag = tag,
+                query = query,
+                all_tasks = all_tasks,
+                flat = flat,
             )['todos']
         ]
 
@@ -589,22 +605,47 @@ def finish_todo(target: str) -> None:
     show_default = True,
     help = 'Include non-pending todos.'
 )
-@click.option('--limit', '-l', default = 25, type = int, help = 'Limit.')
-@click.option('--project', '-p', type = str, help = 'Project.')
+@click.option(
+    '--limit',
+    '-l',
+    default = 25,
+    type = int,
+    help = 'Maximum number of top level todos to fetch.',
+    show_default = True,
+)
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 @click.option('--tag', '-t', type = str, help = 'Filter on tag.')
+@click.option('--query', '-q', type = str, help = 'Filter on text.')
+@click.option(
+    '--all-tasks',
+    '-a',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Include all tasks, not just top level ones.',
+)
+@click.option(
+    '--flat',
+    '-f',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Dont show task children',
+)
 def list_todos(
     history: bool = False,
     limit: int = 25,
-    project: t.Optional[str] = None,
-    tag: t.Optional[str] = None,
+    **kwargs,
 ) -> None:
     """
     List pending todos.
     """
     print_todos(
-        Client().todo_history(project = project, limit = limit, tag = tag)
+        Client().todo_history(limit = limit, **kwargs)
         if history else
-        Client().active_todos(project = project, tag = tag)
+        Client().active_todos(**kwargs)
     )
 
 

@@ -21,6 +21,7 @@ engine = create_engine(
     uri,
     pool_size = 32,
     echo = False,
+    pool_pre_ping = True,
 )
 
 session_factory = sessionmaker(bind = engine)
