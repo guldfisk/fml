@@ -47,6 +47,19 @@ class TagSchema(Schema[models.Tag]):
     created_at = fields.Datetime(read_only = True)
 
 
+class PrioritySchema(Schema[models.Priority]):
+    id = fields.Integer(read_only = True)
+    name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
+    created_at = fields.Datetime(read_only = True)
+    level = fields.Integer()
+    project = fields.Lambda(lambda p: p.project.name)
+    is_default = fields.Bool(default = False)
+
+
+class PriorityCreateSchema(PrioritySchema):
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+
+
 class CreateTodoSchema(Schema):
     tags = fields.List(
         fields.CoalesceField(
@@ -73,6 +86,13 @@ class CreateTodoSchema(Schema):
         ),
         default = (),
     )
+    priority = fields.CoalesceField(
+        [
+            fields.Integer(),
+            fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+')),
+        ],
+        required = False,
+    )
 
 
 class ToDoListOptions(Schema):
@@ -82,6 +102,7 @@ class ToDoListOptions(Schema):
     all_tasks = fields.Bool(default = False)
     flat = fields.Bool(default = False)
     limit = fields.Integer(default = 25)
+    priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
 
 
 class ToDoSchema(Schema[models.ToDo]):
@@ -92,9 +113,20 @@ class ToDoSchema(Schema[models.ToDo]):
     tags = fields.Lambda(lambda todo: [tag.name for tag in todo.tags])
     project = fields.Lambda(lambda todo: todo.project.name)
 
+    priority = fields.Lambda(lambda todo: todo.priority.name)
+
     created_at = fields.Datetime(read_only = True)
     finished_at = fields.Datetime(read_only = True)
 
     canceled = fields.Bool(read_only = True)
 
     children = fields.List(fields.SelfRelated(), read_only = True, source = 'active_children')
+
+
+class ModifyPrioritySchema(Schema[models.Tagged]):
+    todo = custom_fields.StringIdentifiedField(
+        models.ToDo,
+        base_query_getter = lambda s: models.ToDo.active_todos(s),
+    )
+    priority = fields.CoalesceField([fields.Integer(), fields.Text()])
+    recursive = fields.Bool(default = False, write_only = True)

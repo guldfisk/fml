@@ -15,7 +15,7 @@ MAILGUN_KEY = _parser['MAIL']['mailgun_key']
 MAILGUN_DOMAIN = _parser['MAIL']['mailgun_domain']
 EMAIL = _parser['MAIL']['owner_email']
 
-uri = '{dialect}+{driver}://{username}:{password}@{host}/{database}?charset=utf8'.format(**_keys)
+uri = '{dialect}+{driver}://{username}:{password}@{host}/{database}'.format(**_keys)
 
 engine = create_engine(
     uri,

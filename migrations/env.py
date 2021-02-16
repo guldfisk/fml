@@ -5,8 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from fml import uri
-from fml.models import Base
+from fml.server import uri
+from fml.server.models import Base
 
 
 config = context.config

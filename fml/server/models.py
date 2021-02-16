@@ -100,20 +100,27 @@ class StringIdentified(Base):
     text_identifier: Column[String]
 
     @classmethod
-    def get_for_no_identifier(cls, session: Session, target = None) -> t.Optional[int]:
+    def get_for_no_identifier(
+        cls,
+        session: Session,
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.Optional[StringIdentified]:
         return None
 
     @classmethod
     def get_for_identifier(
-        cls, session: Session,
+        cls,
+        session: Session,
         identifier: t.Union[str, int, None],
         target = None,
         base_query: t.Optional[Query] = None,
     ) -> t.Optional[StringIdentified]:
         target = target or cls
         base_query = session.query(target) if base_query is None else base_query
+
         if not identifier:
-            return cls.get_for_no_identifier(session, target = target)
+            return cls.get_for_no_identifier(session, target = target, base_query = base_query)
         if isinstance(identifier, int):
             return base_query.filter(cls.id == identifier).scalar()
         try:
@@ -135,6 +142,53 @@ class Tag(StringIdentified):
     text_identifier = synonym('name')
 
 
+class Priority(StringIdentified):
+    __tablename__ = 'priority'
+
+    id = Column(Integer, primary_key = True)
+    name = Column(String(127))
+    todos: t.Sequence[ToDo] = relationship('ToDo', back_populates = 'priority')
+    created_at = Column(DateTime, default = datetime.datetime.now)
+    project_id = Column(
+        Integer,
+        ForeignKey('project.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+    project = relationship('Project', back_populates = 'priorities')
+    level = Column(Integer)
+    is_default = Column(Boolean, default = False)
+
+    text_identifier = synonym('name')
+
+    __table_args__ = (UniqueConstraint('project_id', 'level'), UniqueConstraint('project_id', 'name'),)
+
+    @classmethod
+    def get_for_no_identifier(
+        cls,
+        session: Session,
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.Optional[StringIdentified]:
+        return base_query.filter(cls.is_default == True).scalar()
+
+    @classmethod
+    def get_for_identifier_and_project(
+        cls,
+        session: Session,
+        project_id: int,
+        identifier: t.Union[str, int, None],
+        target = None,
+    ):
+        target = target or cls
+        return cls.get_for_identifier(
+            session = session,
+            identifier = identifier,
+            base_query = session.query(target or cls).filter(
+                cls.project_id == project_id
+            )
+        )
+
+
 class Project(StringIdentified):
     __tablename__ = 'project'
 
@@ -149,11 +203,22 @@ class Project(StringIdentified):
         cascade = 'all, delete-orphan',
     )
 
+    priorities = relationship(
+        'Priority',
+        back_populates = 'project',
+        cascade = 'all, delete-orphan',
+    )
+
     text_identifier = synonym('name')
 
     @classmethod
-    def get_for_no_identifier(cls, session: Session, target = None) -> t.Optional[int]:
-        return session.query(target or cls).filter(cls.is_default == True).scalar()
+    def get_for_no_identifier(
+        cls,
+        session: Session,
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.Optional[StringIdentified]:
+        return session.query(target or cls).filter(cls.is_default).scalar()
 
 
 class Dependency(Base):
@@ -191,6 +256,13 @@ class ToDo(StringIdentified):
         nullable = False,
     )
     project = relationship('Project', back_populates = 'todos')
+
+    priority_id = Column(
+        Integer,
+        ForeignKey('priority.id', ondelete = 'CASCADE'),
+        nullable = True,
+    )
+    priority = relationship('Priority', back_populates = 'todos')
 
     tags: t.Sequence[Tag] = relationship(
         'Tag',

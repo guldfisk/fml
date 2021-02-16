@@ -1,3 +1,4 @@
+import json
 import logging
 import typing as t
 import datetime
@@ -50,11 +51,15 @@ class Client(object):
         try:
             response.raise_for_status()
         except Exception:
-            raise ClientError(
-                response.content.decode('utf-8')
-                if isinstance(response.content, bytes) else
-                str(response.content)
-            )
+            try:
+                message = json.dumps(response.json(), indent = 4)
+            except ValueError:
+                message = (
+                    response.content.decode('utf-8')
+                    if isinstance(response.content, bytes) else
+                    str(response.content)
+                )
+            raise ClientError(message)
         return response.json()
 
     def new_alarm(
@@ -68,7 +73,7 @@ class Client(object):
     ) -> models.Alarm:
         return models.Alarm.from_remote(
             self._make_request(
-                'alarm/',
+                'alarms/',
                 'POST',
                 {
                     'text': text,
@@ -147,10 +152,22 @@ class Client(object):
             self._make_request('project/', limit = limit)['projects']
         ]
 
+    def list_priorities(
+        self,
+        project: t.Union[str, int, None],
+        limit: t.Optional[int] = 25,
+    ) -> t.Sequence[models.Priority]:
+        return [
+            models.Priority.from_remote(project)
+            for project in
+            self._make_request('priorities/', limit = limit, project = project)['priorities']
+        ]
+
     def new_todo(
         self,
         text: str,
         project: t.Optional[str] = None,
+        priority: t.Optional[str] = None,
         tags: t.Collection[str] = (),
         parents: t.Collection[str] = (),
     ) -> models.ToDo:
@@ -161,8 +178,29 @@ class Client(object):
                 {
                     'text': text,
                     'project': project,
+                    'priority': priority,
                     'tags': tags,
                     'parents': parents,
+                }
+            )
+        )
+
+    def new_priority(
+        self,
+        name: str,
+        level: int,
+        project: t.Union[str, int, None],
+        is_default: bool = False,
+    ) -> models.Priority:
+        return models.Priority.from_remote(
+            self._make_request(
+                'priorities/',
+                'POST',
+                {
+                    'name': name,
+                    'project': project,
+                    'level': level,
+                    'is_default': is_default,
                 }
             )
         )
@@ -192,6 +230,7 @@ class Client(object):
         query: t.Optional[str] = None,
         all_tasks: bool = False,
         flat: bool = False,
+        priority: t.Union[str, int, None] = None,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
@@ -203,6 +242,7 @@ class Client(object):
                 query = query,
                 all_tasks = all_tasks,
                 flat = flat,
+                priority = priority,
             )['todos']
         ]
 
@@ -214,6 +254,7 @@ class Client(object):
         query: t.Optional[str] = None,
         all_tasks: bool = False,
         flat: bool = False,
+        priority: t.Union[str, int, None] = None,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
@@ -226,6 +267,7 @@ class Client(object):
                 query = query,
                 all_tasks = all_tasks,
                 flat = flat,
+                priority = priority,
             )['todos']
         ]
 
@@ -297,6 +339,24 @@ class Client(object):
             }
         )
 
+    def modify_todo_priority(
+        self,
+        todo: t.Union[int, str],
+        priority: t.Union[int, str],
+        recursive: bool = False,
+    ) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'priorities/modify',
+                method = 'PATCH',
+                data = {
+                    'todo': todo,
+                    'priority': priority,
+                    'recursive': recursive,
+                }
+            )
+        )
+
     def register_dependency(self, parent: t.Union[int, str], child: t.Union[int, str]) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
@@ -308,6 +368,26 @@ class Client(object):
                 }
             )
         )
+
+    def swap_priority_levels(
+        self,
+        first: t.Union[int, str],
+        second: t.Union[int, str],
+        project: t.Union[int, str, None] = None,
+    ) -> t.Sequence[models.Priority]:
+        return [
+            models.Priority.from_remote(project)
+            for project in
+            self._make_request(
+                'priorities/swap-levels',
+                method = 'PATCH',
+                data = {
+                    'first': first,
+                    'second': second,
+                    'project': project,
+                }
+            )['priorities']
+        ]
 
 
 def print_projects(project: t.Sequence[models.Project]) -> None:
@@ -335,6 +415,35 @@ def print_projects(project: t.Sequence[models.Project]) -> None:
 
 def print_project(project: models.Project) -> None:
     print_projects((project,))
+
+
+def print_priorities(priorities: t.Sequence[models.Priority]) -> None:
+    table = Texttable()
+    table.set_deco(Texttable.HEADER)
+    table.set_max_width(180)
+    table.header(
+        ['ID', 'Name', 'Project', 'Level', 'Is Default', 'Created At']
+    )
+    table.add_rows(
+        [
+            [
+                priority.pk,
+                priority.name,
+                priority.project,
+                priority.level,
+                str(priority.is_default),
+                priority.created_at.strftime(models.DATETIME_FORMAT),
+            ]
+            for priority in
+            priorities
+        ],
+        header = False,
+    )
+    print(table.draw())
+
+
+def print_priority(priority: models.Priority) -> None:
+    print_priorities((priority,))
 
 
 def print_alarm(alarm: models.Alarm) -> None:
@@ -383,7 +492,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Tags', 'Project']
+        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Priority', 'Tags', 'Project']
     )
     table.add_rows(
         [
@@ -395,6 +504,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
                 format_timedelta(todo.elapsed),
                 format_timedelta(todo.duration) if todo.finished_at else '-',
                 todo.status,
+                todo.priority,
                 ', '.join(todo.tags),
                 todo.project,
             ]
@@ -556,11 +666,13 @@ def todo_service() -> None:
 @todo_service.command(name = 'new')
 @click.argument('text', type = str, required = True, nargs = -1)
 @click.option('--project', '-p', type = str, help = 'Project.')
+@click.option('--priority', '-i', default = None, type = str, help = 'Priority.')
 @click.option('--tag', '-t', default = (), type = str, help = 'Tags.', multiple = True)
-@click.option('--parent', '-a', default = (), type = str, help = 'parent.', multiple = True)
+@click.option('--parent', '-a', default = (), type = str, help = 'Parent.', multiple = True)
 def new_todo(
     text: t.Sequence[str],
-    project: str,
+    project: t.Optional[str],
+    priority: t.Optional[str],
     tag: t.Sequence[str],
     parent: t.Sequence[str],
 ) -> None:
@@ -571,6 +683,7 @@ def new_todo(
         Client().new_todo(
             ' '.join(text),
             project = project,
+            priority = priority,
             tags = tag,
             parents = parent,
         )
@@ -634,6 +747,7 @@ def finish_todo(target: str) -> None:
     show_default = True,
     help = 'Dont show task children',
 )
+@click.option('--priority', '-i', default = None, type = str, help = 'Priority.')
 def list_todos(
     history: bool = False,
     limit: int = 25,
@@ -763,7 +877,7 @@ def create_tag(
     type = bool,
     is_flag = True,
     show_default = True,
-    help = 'Add tag to all children recursivly.',
+    help = 'Add tag to all children recursively.',
 )
 def tag_todo(
     todo: str,
@@ -801,7 +915,7 @@ def project_service() -> None:
 
 
 @project_service.command(name = 'list')
-def list_tags() -> None:
+def list_projects() -> None:
     """
     List projects.
     """
@@ -820,6 +934,92 @@ def create_tag(
     """
     print_project(
         Client().create_project(name)
+    )
+
+
+@todo_service.group('p')
+def priority_service() -> None:
+    """
+    Todo priorities.
+    """
+    pass
+
+
+@priority_service.command(name = 'new')
+@click.argument('name', type = str, required = True)
+@click.option('--project', '-p', type = str, help = 'Project.')
+@click.option('--level', '-l', default = 0, type = int, help = 'Level.')
+def new_priority(
+    name: str,
+    project: str,
+    level: int,
+) -> None:
+    """
+    Create a new priority
+    """
+    print_priority(
+        Client().new_priority(
+            name = name,
+            level = level,
+            project = project,
+        )
+    )
+
+
+@priority_service.command(name = 'swap')
+@click.argument('first', type = str, required = True)
+@click.argument('second', type = str, required = True)
+@click.option('--project', '-p', type = str, help = 'Project.')
+def swap_priority_levels(
+    first: str,
+    second: str,
+    project: t.Optional[str],
+) -> None:
+    """
+    Create a new priority
+    """
+    print_priorities(
+        Client().swap_priority_levels(
+            first = first,
+            second = second,
+            project = project,
+        )
+    )
+
+
+@priority_service.command(name = 'list')
+@click.option('--project', '-p', type = str, help = 'Project.')
+def list_priorities(project: str) -> None:
+    """
+    List priorities.
+    """
+    print_priorities(
+        Client().list_priorities(project = project)
+    )
+
+
+@priority_service.command(name = 'mod')
+@click.argument('todo', type = str, required = True)
+@click.argument('priority', type = str, required = True)
+@click.option(
+    '--recursive',
+    '-r',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Change priority of all children recursively.',
+)
+def change_priority(
+    todo: str,
+    priority: str,
+    recursive: bool = False,
+) -> None:
+    """
+    Modify todo priority.
+    """
+    print_todo(
+        Client().modify_todo_priority(todo, priority, recursive = recursive)
     )
 
 

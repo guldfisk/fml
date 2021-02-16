@@ -200,6 +200,56 @@ class Project(RemoteModel):
         )
 
 
+class Priority(RemoteModel):
+
+    def __init__(
+        self,
+        pk: int,
+        name: str,
+        project: str,
+        level: int,
+        is_default: bool,
+        created_at: datetime.datetime,
+    ):
+        super().__init__(pk)
+        self._name = name
+        self._project = project
+        self._level = level
+        self._is_default = is_default
+        self._created_at = created_at
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def project(self) -> str:
+        return self._project
+
+    @property
+    def level(self) -> int:
+        return self._level
+
+    @property
+    def is_default(self) -> bool:
+        return self._is_default
+
+    @property
+    def created_at(self) -> datetime.datetime:
+        return self._created_at
+
+    @classmethod
+    def from_remote(cls, remote: Serialized) -> Priority:
+        return cls(
+            pk = remote['id'],
+            name = remote['name'],
+            project = remote['project'],
+            level = remote['level'],
+            is_default = remote['is_default'],
+            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
+        )
+
+
 class ToDo(RemoteModel):
 
     def __init__(
@@ -211,6 +261,7 @@ class ToDo(RemoteModel):
         canceled: bool,
         tags: t.Sequence[str],
         project: str,
+        priority: str,
         children: t.Optional[t.Sequence[ToDo]] = None,
         parents: t.Optional[t.Sequence[ToDo]] = None,
     ):
@@ -223,6 +274,7 @@ class ToDo(RemoteModel):
         self._project = project
         self._children = children
         self._parents = parents
+        self._priority = priority
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> ToDo:
@@ -238,6 +290,7 @@ class ToDo(RemoteModel):
             canceled = remote['canceled'],
             tags = remote['tags'],
             project = remote['project'],
+            priority = remote['priority'],
             children = [cls.from_remote(child) for child in remote['children']] if 'children' in remote else None,
             parents = [cls.from_remote(parent) for parent in remote['parents']] if 'parents' in remote else None,
         )
@@ -265,6 +318,10 @@ class ToDo(RemoteModel):
     @property
     def project(self) -> str:
         return self._project
+
+    @property
+    def priority(self) -> str:
+        return self._priority
 
     @property
     def children(self) -> t.Sequence[ToDo]:
