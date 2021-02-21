@@ -46,12 +46,12 @@ def inject_tag(f: t.Callable):
     return wrapper
 
 
-def inject_schema(schema: Schema):
+def inject_schema(schema: Schema, use_args: bool = True):
     def wrapper(f: t.Callable):
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             try:
-                values = schema.deserialize_raw(request.args)
+                values = schema.deserialize_raw(request.args if use_args else request.data)
             except DeserializationError as e:
                 return e.serialized, status.HTTP_400_BAD_REQUEST
 

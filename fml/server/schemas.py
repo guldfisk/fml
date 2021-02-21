@@ -95,6 +95,11 @@ class CreateTodoSchema(Schema):
     )
 
 
+class UpdateDependencySchema(Schema):
+    parent = custom_fields.StringIdentifiedField(models.ToDo, base_query_getter = lambda s: models.ToDo.active_todos(s))
+    child = custom_fields.StringIdentifiedField(models.ToDo, base_query_getter = lambda s: models.ToDo.active_todos(s))
+
+
 class ToDoListOptions(Schema):
     project = custom_fields.StringIdentifiedField(models.Project, default = None)
     tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)

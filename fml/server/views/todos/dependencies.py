@@ -1,14 +1,13 @@
-import typing as t
-
 from sqlalchemy.exc import IntegrityError, OperationalError
 
-from flask import request, Blueprint
+from flask import Blueprint
 from flask_api import status
 from flask_api.request import APIRequest
 
 from fml.server import models
 from fml.server import schemas
 from fml.server.session import SessionContainer as SC
+from fml.server.views.utils import inject_schema
 
 
 todo_dependency_views = Blueprint('todo_dependency_views', __name__)
@@ -16,25 +15,8 @@ request: APIRequest
 
 
 @todo_dependency_views.route('/todo/add-dependency/', methods = ['POST'])
-def add_dependency():
-    parent: t.Optional[models.ToDo] = models.ToDo.get_for_identifier(
-        SC.session,
-        request.data.get('parent'),
-        base_query = models.ToDo.active_todos(SC.session),
-    )
-
-    if parent is None:
-        return 'Invalid parent', status.HTTP_400_BAD_REQUEST
-
-    child: t.Optional[models.ToDo] = models.ToDo.get_for_identifier(
-        SC.session,
-        request.data.get('child'),
-        base_query = models.ToDo.active_todos(SC.session),
-    )
-
-    if child is None:
-        return 'Invalid child', status.HTTP_400_BAD_REQUEST
-
+@inject_schema(schemas.UpdateDependencySchema(), use_args = False)
+def add_dependency(parent: models.ToDo, child: models.ToDo):
     if parent in child.traverse_children(active_only = False):
         return 'Dependencies can not be circular', status.HTTP_400_BAD_REQUEST
 
