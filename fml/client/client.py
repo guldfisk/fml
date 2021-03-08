@@ -7,6 +7,7 @@ import requests
 import click
 from texttable import Texttable
 
+from fml import notify
 from fml.client import models
 from fml.client.dateparse import parse_datetime, DateParseException
 from fml.client.utils import format_timedelta
@@ -522,6 +523,14 @@ def main() -> None:
     Keep track of stuff and such.
     """
     pass
+
+
+@main.command(name = 'ding')
+def ding() -> None:
+    """
+    Play alarm sound.
+    """
+    notify.play_sound()
 
 
 @main.group('alarm')
