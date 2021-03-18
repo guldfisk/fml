@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import typing as t
 import datetime
 
@@ -358,6 +359,22 @@ class Client(object):
             )
         )
 
+    def modify_todo_description(
+        self,
+        todo: t.Union[int, str],
+        description: str,
+    ) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/description/',
+                method = 'PATCH',
+                data = {
+                    'todo': todo,
+                    'description': description,
+                }
+            )
+        )
+
     def register_dependency(self, parent: t.Union[int, str], child: t.Union[int, str]) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
@@ -389,6 +406,25 @@ class Client(object):
                 }
             )['priorities']
         ]
+
+
+class AliasedGroup(click.Group):
+
+    def get_command(self, ctx, cmd_name):
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+        matches = [
+            x
+            for x in
+            self.list_commands(ctx)
+            if x.startswith(cmd_name)
+        ]
+        if not matches:
+            return None
+        elif len(matches) == 1:
+            return click.Group.get_command(self, ctx, matches[0])
+        ctx.fail('Too many matches: {}'.format(', '.join(sorted(matches))))
 
 
 def print_projects(project: t.Sequence[models.Project]) -> None:
@@ -517,7 +553,7 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
     print(table.draw())
 
 
-@click.group()
+@click.group(cls = AliasedGroup)
 def main() -> None:
     """
     Keep track of stuff and such.
@@ -533,7 +569,7 @@ def ding() -> None:
     notify.play_sound()
 
 
-@main.group('alarm')
+@main.group('alarm', cls = AliasedGroup)
 def alarm_service() -> None:
     """
     Timed alarms.
@@ -664,12 +700,16 @@ def acknowledge_alarms(target: str) -> None:
         print_alarm(Client().acknowledge_alarm(alarm_id))
 
 
-@main.group('todo')
+@main.group('todo', cls = AliasedGroup)
 def todo_service() -> None:
     """
     Keep track of stuff to do.
     """
     pass
+
+
+def get_default_project(project: t.Optional[str] = None) -> t.Optional[str]:
+    return project or os.environ.get('DEFP')
 
 
 @todo_service.command(name = 'new')
@@ -691,11 +731,26 @@ def new_todo(
     print_todo(
         Client().new_todo(
             ' '.join(text),
-            project = project,
+            project = get_default_project(project),
             priority = priority,
             tags = tag,
             parents = parent,
         )
+    )
+
+
+@todo_service.command(name = 'mod')
+@click.argument('todo', type = str, required = True)
+@click.argument('description', type = str, required = True)
+def change_priority(
+    todo: str,
+    description: str,
+) -> None:
+    """
+    Modify todo description.
+    """
+    print_todo(
+        Client().modify_todo_description(todo, description)
     )
 
 
@@ -765,6 +820,7 @@ def list_todos(
     """
     List pending todos.
     """
+    kwargs['project'] = get_default_project(kwargs['project'])
     print_todos(
         Client().todo_history(limit = limit, **kwargs)
         if history else
@@ -816,7 +872,7 @@ def todos_burn_down(
     Show todo burndown chart.
     """
     _show_points(
-        Client().todo_burn_down(project = project, tag = tag),
+        Client().todo_burn_down(project = get_default_project(project), tag = tag),
         chart,
     )
 
@@ -842,12 +898,12 @@ def todos_throughput(
     Show todo throughput chart.
     """
     _show_points(
-        Client().todo_throughput(project = project, tag = tag),
+        Client().todo_throughput(project = get_default_project(project), tag = tag),
         chart,
     )
 
 
-@todo_service.group('tag')
+@todo_service.group('tag', cls = AliasedGroup)
 def tag_service() -> None:
     """
     Todo tags.
@@ -915,7 +971,7 @@ def tag_todo(
     )
 
 
-@todo_service.group('project')
+@todo_service.group('project', cls = AliasedGroup)
 def project_service() -> None:
     """
     Todo projects.
@@ -946,7 +1002,7 @@ def create_tag(
     )
 
 
-@todo_service.group('p')
+@todo_service.group('p', cls = AliasedGroup)
 def priority_service() -> None:
     """
     Todo priorities.
@@ -964,13 +1020,13 @@ def new_priority(
     level: int,
 ) -> None:
     """
-    Create a new priority
+    Create a new priority.
     """
     print_priority(
         Client().new_priority(
             name = name,
             level = level,
-            project = project,
+            project = get_default_project(project),
         )
     )
 
@@ -985,13 +1041,13 @@ def swap_priority_levels(
     project: t.Optional[str],
 ) -> None:
     """
-    Create a new priority
+    Create priority levels of priorities.
     """
     print_priorities(
         Client().swap_priority_levels(
             first = first,
             second = second,
-            project = project,
+            project = get_default_project(project),
         )
     )
 
@@ -1003,7 +1059,7 @@ def list_priorities(project: str) -> None:
     List priorities.
     """
     print_priorities(
-        Client().list_priorities(project = project)
+        Client().list_priorities(project = get_default_project(project))
     )
 
 

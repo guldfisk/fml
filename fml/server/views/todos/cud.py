@@ -99,6 +99,14 @@ def create_todo():
     return schema.serialize(todo)
 
 
+@todo_cud_views.route('/todo/description/', methods = ['PATCH'])
+@inject_schema(schemas.ModifyToDoSchema(), use_args = False)
+def modify_todo_description(todo: models.ToDo, description: str):
+    todo.text = description
+    SC.session.commit()
+    return schemas.ToDoSchema().serialize(todo)
+
+
 class ModifyTodo(View):
 
     def _modify_todo(self, todo: models.ToDo) -> None:

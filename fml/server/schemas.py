@@ -135,3 +135,11 @@ class ModifyPrioritySchema(Schema[models.Tagged]):
     )
     priority = fields.CoalesceField([fields.Integer(), fields.Text()])
     recursive = fields.Bool(default = False, write_only = True)
+
+
+class ModifyToDoSchema(Schema):
+    todo = custom_fields.StringIdentifiedField(
+        models.ToDo,
+        base_query_getter = lambda s: models.ToDo.active_todos(s),
+    )
+    description = fields.Text()
