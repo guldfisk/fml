@@ -709,7 +709,8 @@ def todo_service() -> None:
 
 
 def get_default_project(project: t.Optional[str] = None) -> t.Optional[str]:
-    return project or os.environ.get('DEFP')
+    p = project or os.environ.get('DEFP')
+    return p if p else None
 
 
 @todo_service.command(name = 'new')
