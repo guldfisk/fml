@@ -277,6 +277,7 @@ class Client(object):
         self,
         project: t.Optional[str] = None,
         tag: t.Optional[str] = None,
+        all_tasks: bool = False,
     ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
@@ -288,6 +289,7 @@ class Client(object):
                 'todo/burn-down/',
                 project = project,
                 tag = tag,
+                top_level_only = not all_tasks,
             )['points']
         ]
 
@@ -295,6 +297,7 @@ class Client(object):
         self,
         project: t.Optional[str] = None,
         tag: t.Optional[str] = None,
+        all_tasks: bool = False,
     ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
@@ -306,6 +309,7 @@ class Client(object):
                 'todo/throughput/',
                 project = project,
                 tag = tag,
+                top_level_only = not all_tasks,
             )['points']
         ]
 
@@ -616,12 +620,15 @@ def new_alarm(
     Create new alarm.
     """
     if absolute is None:
-        target = datetime.datetime.now(
-        ) + datetime.timedelta(
+        change = datetime.timedelta(
             seconds = seconds,
             minutes = minutes,
             hours = hours,
         )
+        if not change:
+            print('alarm must be scheduled for future')
+            return
+        target = datetime.datetime.now() + change
     else:
         try:
             target = parse_datetime(absolute)
@@ -864,16 +871,30 @@ def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, floa
 )
 @click.option('--project', '-p', type = str, help = 'Project.')
 @click.option('--tag', '-t', type = str, help = 'Filter on tag.')
+@click.option(
+    '--all-tasks',
+    '-a',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Include all tasks, not just top level ones.',
+)
 def todos_burn_down(
     chart: bool = False,
     project: t.Optional[str] = None,
     tag: t.Optional[str] = None,
+    all_tasks: bool = False,
 ) -> None:
     """
     Show todo burndown chart.
     """
     _show_points(
-        Client().todo_burn_down(project = get_default_project(project), tag = tag),
+        Client().todo_burn_down(
+            project = get_default_project(project),
+            tag = tag,
+            all_tasks = all_tasks,
+        ),
         chart,
     )
 
@@ -890,16 +911,30 @@ def todos_burn_down(
 )
 @click.option('--project', '-p', type = str, help = 'Project.')
 @click.option('--tag', '-t', type = str, help = 'Filter on Tag.')
+@click.option(
+    '--all-tasks',
+    '-a',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Include all tasks, not just top level ones.',
+)
 def todos_throughput(
     chart: bool = False,
     project: t.Optional[str] = None,
     tag: t.Optional[str] = None,
+    all_tasks: bool = False,
 ) -> None:
     """
     Show todo throughput chart.
     """
     _show_points(
-        Client().todo_throughput(project = get_default_project(project), tag = tag),
+        Client().todo_throughput(
+            project = get_default_project(project),
+            tag = tag,
+            all_tasks = all_tasks,
+        ),
         chart,
     )
 

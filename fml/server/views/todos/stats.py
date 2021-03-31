@@ -3,10 +3,11 @@ import typing as t
 
 from flask import Blueprint
 from flask_api.request import APIRequest
+from sqlalchemy import exists
 
-from fml.server import models
+from fml.server import models, schemas
 from fml.server.session import SessionContainer as SC
-from fml.server.views.utils import inject_project, inject_tag, DATETIME_FORMAT
+from fml.server.views.utils import DATETIME_FORMAT, inject_schema
 
 
 todo_stat_views = Blueprint('todo_stat_views', __name__)
@@ -14,13 +15,21 @@ request: APIRequest
 
 
 @todo_stat_views.route('/todo/burn-down/', methods = ['GET'])
-@inject_project()
-@inject_tag
-def todo_burn_down(project_id: int, tag_id = t.Optional[int]):
-    todos = SC.session.query(models.ToDo).filter(models.ToDo.project_id == project_id)
+@inject_schema(schemas.StatsOptionsSchema())
+def todo_burn_down(
+    project: models.Project,
+    tag: t.Optional[models.Tag],
+    top_level_only: bool,
+):
+    todos = SC.session.query(models.ToDo).filter(models.ToDo.project_id == project.id)
 
-    if tag_id is not None:
-        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
+    if tag is not None:
+        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag.id)
+
+    if top_level_only:
+        todos = todos.filter(
+            ~exists().where(models.Dependency.child_id == models.ToDo.id),
+        )
 
     todos = list(todos)
 
@@ -58,17 +67,25 @@ def todo_burn_down(project_id: int, tag_id = t.Optional[int]):
 
 
 @todo_stat_views.route('/todo/throughput/', methods = ['GET'])
-@inject_project()
-@inject_tag
-def todo_throughput(project_id: int, tag_id: t.Optional[int]):
+@inject_schema(schemas.StatsOptionsSchema())
+def todo_throughput(
+    project: models.Project,
+    tag: t.Optional[models.Tag],
+    top_level_only: bool,
+):
     todos = SC.session.query(models.ToDo.finished_at).filter(
         models.ToDo.canceled == False,
         models.ToDo.finished_at != None,
-        models.ToDo.project_id == project_id,
+        models.ToDo.project_id == project.id,
     ).order_by(models.ToDo.finished_at)
 
-    if tag_id is not None:
-        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag_id)
+    if tag is not None:
+        todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag.id)
+
+    if top_level_only:
+        todos = todos.filter(
+            ~exists().where(models.Dependency.child_id == models.ToDo.id),
+        )
 
     finished_dates = [
         v[0].date()

@@ -143,3 +143,9 @@ class ModifyToDoSchema(Schema):
         base_query_getter = lambda s: models.ToDo.active_todos(s),
     )
     description = fields.Text()
+
+
+class StatsOptionsSchema(Schema):
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
+    top_level_only = fields.Bool(default = True)
