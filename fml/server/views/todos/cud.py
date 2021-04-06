@@ -205,8 +205,8 @@ class BaseToDoList(View):
         todos = self.order_todos(
             self.get_base_query().filter(
                 models.ToDo.project_id == project.id,
-            ).options(joinedload('tags'), joinedload('children'), joinedload('priority'), joinedload('comments'))
-        )
+            ).options(joinedload('tags'), joinedload('children'), joinedload('comments'))
+        ).join(models.Priority)
 
         if not ignore_priority:
             level = None
@@ -219,7 +219,7 @@ class BaseToDoList(View):
                 level = project.default_priority_filter
 
             if level is not None:
-                todos = todos.join(models.Priority).filter(models.Priority.level <= level)
+                todos = todos.filter(models.Priority.level <= level)
 
         if not all_tasks:
             todos = todos.filter(
@@ -277,7 +277,7 @@ class ToDoList(BaseToDoList):
         return models.ToDo.active_todos(SC.session)
 
     def order_todos(self, query: Query) -> Query:
-        return query.join(models.ToDo.priority).order_by(
+        return query.order_by(
             models.Priority.level,
             models.ToDo.created_at.desc(),
         )
