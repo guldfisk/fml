@@ -33,6 +33,7 @@ class ProjectSchema(Schema[models.Project]):
     name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
     created_at = fields.Datetime(read_only = True)
     is_default = fields.Bool(default = False)
+    default_priority_filter = fields.Integer(default = None, required = False)
 
 
 class TaggedSchema(Schema[models.Tagged]):
@@ -107,7 +108,8 @@ class ToDoListOptions(Schema):
     all_tasks = fields.Bool(default = False)
     flat = fields.Bool(default = False)
     limit = fields.Integer(default = 25)
-    priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
+    ignore_priority = fields.Bool(default = False)
+    minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
 
 
 class ToDoSchema(Schema[models.ToDo]):
@@ -149,3 +151,5 @@ class StatsOptionsSchema(Schema):
     project = custom_fields.StringIdentifiedField(models.Project, default = None)
     tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
     top_level_only = fields.Bool(default = True)
+    ignore_priority = fields.Bool(default = False)
+    minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)

@@ -147,6 +147,22 @@ class Client(object):
             )
         )
 
+    def modify_project_default_priority_filter(
+        self,
+        project: t.Union[int, str],
+        default_priority_filter: t.Union[int, str, None],
+    ) -> models.Project:
+        return models.Project.from_remote(
+            self._make_request(
+                'project/',
+                method = 'PATCH',
+                data = {
+                    'project': project,
+                    'default_priority_filter': default_priority_filter,
+                }
+            )
+        )
+
     def list_projects(self, limit: t.Optional[int] = 25) -> t.Sequence[models.Project]:
         return [
             models.Project.from_remote(project)
@@ -232,7 +248,8 @@ class Client(object):
         query: t.Optional[str] = None,
         all_tasks: bool = False,
         flat: bool = False,
-        priority: t.Union[str, int, None] = None,
+        minimum_priority: t.Union[str, int, None] = None,
+        ignore_priority: bool = False,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
@@ -244,7 +261,8 @@ class Client(object):
                 query = query,
                 all_tasks = all_tasks,
                 flat = flat,
-                priority = priority,
+                minimum_priority = minimum_priority,
+                ignore_priority = ignore_priority,
             )['todos']
         ]
 
@@ -256,7 +274,8 @@ class Client(object):
         query: t.Optional[str] = None,
         all_tasks: bool = False,
         flat: bool = False,
-        priority: t.Union[str, int, None] = None,
+        minimum_priority: t.Union[str, int, None] = None,
+        ignore_priority: bool = False,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
@@ -269,7 +288,8 @@ class Client(object):
                 query = query,
                 all_tasks = all_tasks,
                 flat = flat,
-                priority = priority,
+                minimum_priority = minimum_priority,
+                ignore_priority = ignore_priority,
             )['todos']
         ]
 
@@ -278,6 +298,8 @@ class Client(object):
         project: t.Optional[str] = None,
         tag: t.Optional[str] = None,
         all_tasks: bool = False,
+        ignore_priority: bool = False,
+        minimum_priority: t.Optional[str] = None,
     ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
@@ -290,6 +312,8 @@ class Client(object):
                 project = project,
                 tag = tag,
                 top_level_only = not all_tasks,
+                ignore_priority = ignore_priority,
+                minimum_priority = minimum_priority,
             )['points']
         ]
 
@@ -298,6 +322,8 @@ class Client(object):
         project: t.Optional[str] = None,
         tag: t.Optional[str] = None,
         all_tasks: bool = False,
+        ignore_priority: bool = False,
+        minimum_priority: t.Optional[str] = None,
     ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
@@ -310,6 +336,8 @@ class Client(object):
                 project = project,
                 tag = tag,
                 top_level_only = not all_tasks,
+                ignore_priority = ignore_priority,
+                minimum_priority = minimum_priority,
             )['points']
         ]
 
@@ -436,7 +464,7 @@ def print_projects(project: t.Sequence[models.Project]) -> None:
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
     table.header(
-        ['ID', 'Name', 'Created At', 'Is Default']
+        ['ID', 'Name', 'Created At', 'Is Default', 'Default Priority Filter']
     )
     table.add_rows(
         [
@@ -445,6 +473,7 @@ def print_projects(project: t.Sequence[models.Project]) -> None:
                 project.name,
                 project.created_at.strftime(models.DATETIME_FORMAT),
                 str(project.is_default),
+                str(project.default_priority_filter),
             ]
             for project in
             project
@@ -811,6 +840,15 @@ def finish_todo(target: str) -> None:
     help = 'Include all tasks, not just top level ones.',
 )
 @click.option(
+    '--ignore-priority',
+    '-i',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Don\'t filter on priority',
+)
+@click.option(
     '--flat',
     '-f',
     default = False,
@@ -819,7 +857,7 @@ def finish_todo(target: str) -> None:
     show_default = True,
     help = 'Dont show task children',
 )
-@click.option('--priority', '-i', default = None, type = str, help = 'Priority.')
+@click.option('--minimum-priority', '-m', default = None, type = str, help = 'Minimum priority.')
 def list_todos(
     history: bool = False,
     limit: int = 25,
@@ -880,11 +918,23 @@ def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, floa
     show_default = True,
     help = 'Include all tasks, not just top level ones.',
 )
+@click.option(
+    '--ignore-priority',
+    '-i',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Don\'t filter on priority',
+)
+@click.option('--minimum-priority', '-m', default = None, type = str, help = 'Minimum priority.')
 def todos_burn_down(
     chart: bool = False,
     project: t.Optional[str] = None,
     tag: t.Optional[str] = None,
     all_tasks: bool = False,
+    ignore_priority: bool = False,
+    minimum_priority: t.Optional[str] = None,
 ) -> None:
     """
     Show todo burndown chart.
@@ -894,6 +944,8 @@ def todos_burn_down(
             project = get_default_project(project),
             tag = tag,
             all_tasks = all_tasks,
+            ignore_priority = ignore_priority,
+            minimum_priority = minimum_priority,
         ),
         chart,
     )
@@ -920,11 +972,23 @@ def todos_burn_down(
     show_default = True,
     help = 'Include all tasks, not just top level ones.',
 )
+@click.option(
+    '--ignore-priority',
+    '-i',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Don\'t filter on priority',
+)
+@click.option('--minimum-priority', '-m', default = None, type = str, help = 'Minimum priority.')
 def todos_throughput(
     chart: bool = False,
     project: t.Optional[str] = None,
     tag: t.Optional[str] = None,
     all_tasks: bool = False,
+    ignore_priority: bool = False,
+    minimum_priority: t.Optional[str] = None,
 ) -> None:
     """
     Show todo throughput chart.
@@ -934,6 +998,8 @@ def todos_throughput(
             project = get_default_project(project),
             tag = tag,
             all_tasks = all_tasks,
+            ignore_priority = ignore_priority,
+            minimum_priority = minimum_priority,
         ),
         chart,
     )
@@ -1035,6 +1101,21 @@ def create_tag(
     """
     print_project(
         Client().create_project(name)
+    )
+
+
+@project_service.command(name = 'mod')
+@click.argument('name', type = str, required = True)
+@click.argument('level', type = str, required = True)
+def modify_project_default_priority_filter(
+    name: str,
+    level: str,
+) -> None:
+    """
+    Create a new tag
+    """
+    print_project(
+        Client().modify_project_default_priority_filter(name, None if level.lower() == 'none' else level),
     )
 
 

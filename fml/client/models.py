@@ -171,12 +171,14 @@ class Project(RemoteModel):
         pk: int,
         name: str,
         created_at: datetime.datetime,
-        is_default: bool = True
+        is_default: bool = True,
+        default_priority_filter: t.Optional[int] = None,
     ):
         super().__init__(pk)
         self._name = name
         self._created_at = created_at
         self._is_default = is_default
+        self._default_priority_filter = default_priority_filter
 
     @property
     def name(self) -> str:
@@ -190,6 +192,10 @@ class Project(RemoteModel):
     def is_default(self) -> bool:
         return self._is_default
 
+    @property
+    def default_priority_filter(self) -> t.Optional[int]:
+        return self._default_priority_filter
+
     @classmethod
     def from_remote(cls, remote: Serialized) -> Project:
         return cls(
@@ -197,6 +203,7 @@ class Project(RemoteModel):
             name = remote['name'],
             created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
             is_default = remote['is_default'],
+            default_priority_filter = remote['default_priority_filter'],
         )
 
 

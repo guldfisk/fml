@@ -199,7 +199,8 @@ class BaseToDoList(View):
         all_tasks: bool,
         flat: bool,
         limit: int,
-        priority: t.Union[str, int, None],
+        minimum_priority: t.Union[int, str, None],
+        ignore_priority: bool,
     ):
         todos = self.order_todos(
             self.get_base_query().filter(
@@ -207,16 +208,18 @@ class BaseToDoList(View):
             ).options(joinedload('tags'), joinedload('children'), joinedload('priority'))
         )
 
-        if priority is not None:
-            priority_id = models.Priority.get_for_identifier_and_project(
-                session = SC.session,
-                project_id = project.id,
-                identifier = priority,
-                target = models.Priority.id,
-            )
-            if priority_id is None:
-                return 'invalid priority', status.HTTP_400_BAD_REQUEST
-            todos = todos.filter(models.ToDo.priority_id == priority_id)
+        if not ignore_priority:
+            level = None
+
+            if minimum_priority is not None:
+                level = models.Priority.level_from_identifier(SC.session, minimum_priority, project)
+                if level is None:
+                    return 'invalid priority', status.HTTP_400_BAD_REQUEST
+            elif project.default_priority_filter is not None:
+                level = project.default_priority_filter
+
+            if level is not None:
+                todos = todos.filter(models.Priority.level <= level)
 
         if not all_tasks:
             todos = todos.filter(
