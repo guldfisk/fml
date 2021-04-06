@@ -267,6 +267,7 @@ class ToDo(RemoteModel):
         finished_at: t.Optional[datetime.datetime],
         canceled: bool,
         tags: t.Sequence[str],
+        comments: t.Sequence[str],
         project: str,
         priority: str,
         children: t.Optional[t.Sequence[ToDo]] = None,
@@ -278,6 +279,7 @@ class ToDo(RemoteModel):
         self._finished_at = finished_at
         self._canceled = canceled
         self._tags = tags
+        self._comments = comments
         self._project = project
         self._children = children
         self._parents = parents
@@ -296,6 +298,7 @@ class ToDo(RemoteModel):
             ),
             canceled = remote['canceled'],
             tags = remote['tags'],
+            comments = remote['comments'],
             project = remote['project'],
             priority = remote['priority'],
             children = [cls.from_remote(child) for child in remote['children']] if 'children' in remote else None,
@@ -321,6 +324,10 @@ class ToDo(RemoteModel):
     @property
     def tags(self) -> t.Sequence[str]:
         return self._tags
+
+    @property
+    def comments(self) -> t.Sequence[str]:
+        return self._comments
 
     @property
     def project(self) -> str:

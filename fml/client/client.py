@@ -373,6 +373,22 @@ class Client(object):
             }
         )
 
+    def comment_todo(
+        self,
+        todo: t.Union[int, str],
+        comment: str,
+    ) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/comment/',
+                method = 'POST',
+                data = {
+                    'todo': todo,
+                    'comment': comment,
+                }
+            )
+        )
+
     def modify_todo_priority(
         self,
         todo: t.Union[int, str],
@@ -547,8 +563,8 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
     print(table.draw())
 
 
-def print_todo(todo: models.ToDo) -> None:
-    print_todos((todo,))
+def print_todo(todo: models.ToDo, *, show_comments: bool = True) -> None:
+    print_todos((todo,), show_comments = show_comments)
 
 
 def iterate_todos(todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterator[t.Tuple[models.ToDo, int]]:
@@ -557,7 +573,7 @@ def iterate_todos(todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterator
         yield from iterate_todos(todo.children, indent + 1)
 
 
-def print_todos(todos: t.Sequence[models.ToDo]) -> None:
+def print_todos(todos: t.Sequence[models.ToDo], *, show_comments: bool = True) -> None:
     table = Texttable()
     table.set_deco(Texttable.HEADER)
     table.set_max_width(180)
@@ -568,7 +584,14 @@ def print_todos(todos: t.Sequence[models.ToDo]) -> None:
         [
             [
                 todo.pk,
-                '-|' * indent + todo.text,
+                '-|' * indent + todo.text + (
+                    ''.join(
+                        '\n' + '-|' * indent + ' - ' + comment
+                        for comment in
+                        todo.comments
+                    ) if show_comments else
+                    ''
+                ),
                 todo.created_at.strftime(models.DATETIME_FORMAT),
                 todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
                 format_timedelta(todo.elapsed),
@@ -791,6 +814,21 @@ def change_priority(
     )
 
 
+@todo_service.command(name = 'com')
+@click.argument('todo', type = str, required = True)
+@click.argument('comment', type = str, required = True)
+def comment_todo(
+    todo: str,
+    comment: str,
+) -> None:
+    """
+    Add comment to todo.
+    """
+    print_todo(
+        Client().comment_todo(todo, comment)
+    )
+
+
 @todo_service.command(name = 'cancel')
 @click.argument('target', type = str)
 def cancel_todo(target: str) -> None:
@@ -858,6 +896,15 @@ def finish_todo(target: str) -> None:
     help = 'Dont show task children',
 )
 @click.option('--minimum-priority', '-m', default = None, type = str, help = 'Minimum priority.')
+@click.option(
+    '--no-comments',
+    '-c',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Dont show comments',
+)
 def list_todos(
     history: bool = False,
     limit: int = 25,
@@ -867,10 +914,12 @@ def list_todos(
     List pending todos.
     """
     kwargs['project'] = get_default_project(kwargs['project'])
+    no_comments = kwargs.pop('no_comments')
     print_todos(
         Client().todo_history(limit = limit, **kwargs)
         if history else
-        Client().active_todos(**kwargs)
+        Client().active_todos(**kwargs),
+        show_comments = not no_comments,
     )
 
 

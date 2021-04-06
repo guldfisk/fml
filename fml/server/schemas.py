@@ -42,6 +42,11 @@ class TaggedSchema(Schema[models.Tagged]):
     recursive = fields.Bool(default = False, write_only = True)
 
 
+class CommentSchema(Schema):
+    todo = custom_fields.StringIdentifiedField(models.ToDo)
+    comment = fields.Text()
+
+
 class TagSchema(Schema[models.Tag]):
     id = fields.Integer(read_only = True)
     name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
@@ -118,6 +123,7 @@ class ToDoSchema(Schema[models.ToDo]):
     text = fields.Text()
 
     tags = fields.Lambda(lambda todo: [tag.name for tag in todo.tags])
+    comments = fields.Lambda(lambda todo: [comment.text for comment in todo.comments])
     project = fields.Lambda(lambda todo: todo.project.name)
 
     priority = fields.Lambda(lambda todo: todo.priority.name)

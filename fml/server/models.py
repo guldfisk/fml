@@ -4,7 +4,9 @@ import typing as t
 import datetime
 from enum import Enum as _Enum
 
-from sqlalchemy import Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_, ForeignKey, UniqueConstraint
+from sqlalchemy import (
+    Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_, ForeignKey, UniqueConstraint, asc
+)
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, Query, relationship, backref, synonym
@@ -140,6 +142,20 @@ class Tag(StringIdentified):
     created_at = Column(DateTime, default = datetime.datetime.now)
 
     text_identifier = synonym('name')
+
+
+class Comment(Base):
+    __tablename__ = 'comment'
+
+    id = Column(Integer, primary_key = True)
+    text = Column(String(127), nullable = False)
+    created_at = Column(DateTime, default = datetime.datetime.now)
+    todo_id = Column(
+        Integer,
+        ForeignKey('todo.id', ondelete = 'CASCADE'),
+        nullable = False,
+    )
+    todo = relationship('ToDo', back_populates = 'comments')
 
 
 class Priority(StringIdentified):
@@ -287,6 +303,13 @@ class ToDo(StringIdentified):
         'Tag',
         back_populates = 'todos',
         secondary = Tagged.__table__,
+    )
+
+    comments = relationship(
+        'Comment',
+        back_populates = 'todo',
+        cascade = 'all, delete-orphan',
+        order_by = asc(Comment.created_at),
     )
 
     parents = relationship(
