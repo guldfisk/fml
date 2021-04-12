@@ -6,12 +6,11 @@ import datetime
 
 import requests
 import click
-from texttable import Texttable
 
-from fml import notify
+from fml import sound
 from fml.client import models
+from fml.client import output
 from fml.client.dateparse import parse_datetime, DateParseException
-from fml.client.utils import format_timedelta
 
 
 class ClientError(Exception):
@@ -200,6 +199,14 @@ class Client(object):
                     'tags': tags,
                     'parents': parents,
                 }
+            )
+        )
+
+    def get_todo(self, todo: t.Union[str, int]) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/single/',
+                todo = todo,
             )
         )
 
@@ -475,140 +482,6 @@ class AliasedGroup(click.Group):
         ctx.fail('Too many matches: {}'.format(', '.join(sorted(matches))))
 
 
-def print_projects(project: t.Sequence[models.Project]) -> None:
-    table = Texttable()
-    table.set_deco(Texttable.HEADER)
-    table.set_max_width(180)
-    table.header(
-        ['ID', 'Name', 'Created At', 'Is Default', 'Default Priority Filter']
-    )
-    table.add_rows(
-        [
-            [
-                project.pk,
-                project.name,
-                project.created_at.strftime(models.DATETIME_FORMAT),
-                str(project.is_default),
-                str(project.default_priority_filter),
-            ]
-            for project in
-            project
-        ],
-        header = False,
-    )
-    print(table.draw())
-
-
-def print_project(project: models.Project) -> None:
-    print_projects((project,))
-
-
-def print_priorities(priorities: t.Sequence[models.Priority]) -> None:
-    table = Texttable()
-    table.set_deco(Texttable.HEADER)
-    table.set_max_width(180)
-    table.header(
-        ['ID', 'Name', 'Project', 'Level', 'Is Default', 'Created At']
-    )
-    table.add_rows(
-        [
-            [
-                priority.pk,
-                priority.name,
-                priority.project,
-                priority.level,
-                str(priority.is_default),
-                priority.created_at.strftime(models.DATETIME_FORMAT),
-            ]
-            for priority in
-            priorities
-        ],
-        header = False,
-    )
-    print(table.draw())
-
-
-def print_priority(priority: models.Priority) -> None:
-    print_priorities((priority,))
-
-
-def print_alarm(alarm: models.Alarm) -> None:
-    print_alarms((alarm,))
-
-
-def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
-    table = Texttable()
-    table.set_deco(Texttable.HEADER)
-    table.set_max_width(180)
-    table.header(
-        ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'flags', 'status']
-    )
-    table.add_rows(
-        [
-            [
-                alarm.pk,
-                alarm.text,
-                alarm.started_at.strftime(models.DATETIME_FORMAT),
-                alarm.end_at.strftime(models.DATETIME_FORMAT),
-                alarm.eta,
-                format_timedelta(alarm.elapsed),
-                ' '.join(alarm.flags),
-                alarm.status,
-            ]
-            for alarm in
-            alarms
-        ],
-        header = False,
-    )
-    print(table.draw())
-
-
-def print_todo(todo: models.ToDo, *, show_comments: bool = True) -> None:
-    print_todos((todo,), show_comments = show_comments)
-
-
-def iterate_todos(todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterator[t.Tuple[models.ToDo, int]]:
-    for todo in todos:
-        yield todo, indent
-        yield from iterate_todos(todo.children, indent + 1)
-
-
-def print_todos(todos: t.Sequence[models.ToDo], *, show_comments: bool = True) -> None:
-    table = Texttable()
-    table.set_deco(Texttable.HEADER)
-    table.set_max_width(180)
-    table.header(
-        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Priority', 'Tags', 'Project']
-    )
-    table.add_rows(
-        [
-            [
-                todo.pk,
-                '-|' * indent + todo.text + (
-                    ''.join(
-                        '\n' + '-|' * indent + ' - ' + comment
-                        for comment in
-                        todo.comments
-                    ) if show_comments else
-                    ''
-                ),
-                todo.created_at.strftime(models.DATETIME_FORMAT),
-                todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
-                format_timedelta(todo.elapsed),
-                format_timedelta(todo.duration) if todo.finished_at else '-',
-                todo.status,
-                todo.priority,
-                ', '.join(todo.tags),
-                todo.project,
-            ]
-            for todo, indent in
-            iterate_todos(todos)
-        ],
-        header = False,
-    )
-    print(table.draw())
-
-
 @click.group(cls = AliasedGroup)
 def main() -> None:
     """
@@ -622,7 +495,7 @@ def ding() -> None:
     """
     Play alarm sound.
     """
-    notify.play_sound()
+    sound.play_sound()
 
 
 @main.group('alarm', cls = AliasedGroup)
@@ -688,7 +561,7 @@ def new_alarm(
             print('invalid datetime format "{}"'.format(absolute))
             return
 
-    print_alarm(
+    output.print_alarm(
         Client().new_alarm(
             text,
             end_at = target,
@@ -715,7 +588,7 @@ def list_alarms(history: bool = False, limit: int = 10) -> None:
     """
     List active alarms.
     """
-    print_alarms(
+    output.print_alarms(
         Client().alarm_history(limit = limit) if history else Client().active_alarms(limit = limit)
     )
 
@@ -727,7 +600,7 @@ def cancel_alarms(target: str) -> None:
     Cancel alarms with id. "all" for cancelling all active alarms.
     """
     if target == 'all':
-        print_alarms(
+        output.print_alarms(
             Client().cancel_all_alarms()
         )
     else:
@@ -736,7 +609,7 @@ def cancel_alarms(target: str) -> None:
         except ValueError:
             print('invalid target')
             return
-        print_alarm(Client().cancel_alarm(alarm_id))
+        output.print_alarm(Client().cancel_alarm(alarm_id))
 
 
 @alarm_service.command(name = 'ack')
@@ -747,7 +620,7 @@ def acknowledge_alarms(target: str) -> None:
     Target is either id of alarm or "all" for all acknowledgeable alarms.
     """
     if target == 'all':
-        print_alarms(
+        output.print_alarms(
             Client().acknowledge_all_alarms()
         )
     else:
@@ -756,7 +629,7 @@ def acknowledge_alarms(target: str) -> None:
         except ValueError:
             print('invalid target')
             return
-        print_alarm(Client().acknowledge_alarm(alarm_id))
+        output.print_alarm(Client().acknowledge_alarm(alarm_id))
 
 
 @main.group('todo', cls = AliasedGroup)
@@ -788,7 +661,7 @@ def new_todo(
     """
     Create new todo.
     """
-    print_todo(
+    output.print_todo(
         Client().new_todo(
             ' '.join(text),
             project = get_default_project(project),
@@ -801,15 +674,23 @@ def new_todo(
 
 @todo_service.command(name = 'mod')
 @click.argument('todo', type = str, required = True)
-@click.argument('description', type = str, required = True)
+@click.argument('description', type = str, required = False)
 def change_priority(
     todo: str,
-    description: str,
+    description: t.Optional[str],
 ) -> None:
     """
     Modify todo description.
     """
-    print_todo(
+    client = Client()
+    if description is None:
+        existing_todo = client.get_todo(todo)
+        description = click.edit(existing_todo.text)
+        if description is None:
+            print('aborted')
+            return
+        description = description.rstrip('\n')
+    output.print_todo(
         Client().modify_todo_description(todo, description)
     )
 
@@ -824,7 +705,7 @@ def comment_todo(
     """
     Add comment to todo.
     """
-    print_todo(
+    output.print_todo(
         Client().comment_todo(todo, comment)
     )
 
@@ -835,7 +716,7 @@ def cancel_todo(target: str) -> None:
     """
     Cancel todo. Target is either id or partial text of todo.
     """
-    print_todo(Client().cancel_todo(target))
+    output.print_todo(Client().cancel_todo(target))
 
 
 @todo_service.command(name = 'finish')
@@ -844,7 +725,7 @@ def finish_todo(target: str) -> None:
     """
     Finish todo. Target is either id or partial text of todo.
     """
-    print_todo(Client().finish_todo(target))
+    output.print_todo(Client().finish_todo(target))
 
 
 @todo_service.command(name = 'list')
@@ -915,7 +796,7 @@ def list_todos(
     """
     kwargs['project'] = get_default_project(kwargs['project'])
     no_comments = kwargs.pop('no_comments')
-    print_todos(
+    output.print_todos(
         Client().todo_history(limit = limit, **kwargs)
         if history else
         Client().active_todos(**kwargs),
@@ -1117,7 +998,7 @@ def tag_todo(
     """
     Register task as subtask of other task
     """
-    print_todo(
+    output.print_todo(
         Client().register_dependency(parent, task)
     )
 
@@ -1135,7 +1016,7 @@ def list_projects() -> None:
     """
     List projects.
     """
-    print_projects(
+    output.print_projects(
         Client().list_projects()
     )
 
@@ -1148,7 +1029,7 @@ def create_tag(
     """
     Create a new tag
     """
-    print_project(
+    output.print_project(
         Client().create_project(name)
     )
 
@@ -1163,7 +1044,7 @@ def modify_project_default_priority_filter(
     """
     Create a new tag
     """
-    print_project(
+    output.print_project(
         Client().modify_project_default_priority_filter(name, None if level.lower() == 'none' else level),
     )
 
@@ -1188,7 +1069,7 @@ def new_priority(
     """
     Create a new priority.
     """
-    print_priority(
+    output.print_priority(
         Client().new_priority(
             name = name,
             level = level,
@@ -1209,7 +1090,7 @@ def swap_priority_levels(
     """
     Create priority levels of priorities.
     """
-    print_priorities(
+    output.print_priorities(
         Client().swap_priority_levels(
             first = first,
             second = second,
@@ -1224,7 +1105,7 @@ def list_priorities(project: str) -> None:
     """
     List priorities.
     """
-    print_priorities(
+    output.print_priorities(
         Client().list_priorities(project = get_default_project(project))
     )
 
@@ -1249,7 +1130,7 @@ def change_priority(
     """
     Modify todo priority.
     """
-    print_todo(
+    output.print_todo(
         Client().modify_todo_priority(todo, priority, recursive = recursive)
     )
 

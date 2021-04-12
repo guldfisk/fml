@@ -13,8 +13,9 @@ from flask_api import status
 from flask_api.request import APIRequest
 
 from hardcandy import fields
-from hardcandy.schema import DeserializationError, Field
+from hardcandy.schema import DeserializationError, Field, Schema
 
+from fml.server import fields as custom_fields
 from fml.server import models
 from fml.server import schemas
 from fml.server.schemas import ToDoSchema
@@ -164,13 +165,9 @@ class FinishTodo(ModifyTodo):
 todo_cud_views.add_url_rule('/todo/finish/', methods = ['PATCH'], view_func = FinishTodo.as_view('finish_todo'))
 
 
-@todo_cud_views.route('/todo/<int:pk>/', methods = ['GET'])
-def get_todo(pk: int):
-    todo: t.Optional[models.ToDo] = SC.session.query(models.ToDo).get(pk)
-
-    if todo is None:
-        return 'no such todo', status.HTTP_404_NOT_FOUND
-
+@todo_cud_views.route('/todo/single/', methods = ['GET'])
+@inject_schema(Schema({'todo': custom_fields.StringIdentifiedField(models.ToDo)}))
+def get_todo(todo: models.ToDo):
     return ToDoSchema().serialize(todo)
 
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from fml.server import ScopedSession
 from fml.server.models import Alarm
-from fml import notify
+from fml import sound, notify
 
 
 class AlarmWorker(threading.Thread):
@@ -61,7 +61,7 @@ class AlarmWorker(threading.Thread):
 
             notify.notify(alarm.text, description = body)
             if not alarm.silent:
-                notify.play_sound()
+                sound.play_sound()
             if alarm.send_email:
                 notify.send_mail(alarm.text, body)
 

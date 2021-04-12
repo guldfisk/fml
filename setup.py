@@ -32,7 +32,7 @@ setup(
         'appdirs',
         'hardcandy',
         'secretresources',
-        'texttable',
+        'rich',
         'gevent',
         'click',
         'gnuplotlib',

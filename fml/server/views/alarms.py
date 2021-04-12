@@ -4,11 +4,12 @@ from flask import request, Blueprint
 from flask_api import status
 from flask_api.request import APIRequest
 
+from hardcandy.schema import DeserializationError
+
 from fml.server import models
 from fml.server.schemas import AlarmSchema
 from fml.server.session import SessionContainer as SC
 from fml.server.timer import MANAGER
-from hardcandy.schema import DeserializationError
 
 
 alarm_views = Blueprint('alarm_views', __name__, url_prefix = '/alarms')

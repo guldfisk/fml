@@ -1,21 +1,8 @@
-import os
-import threading
 import requests
 
-from playsound import playsound
 from pynotifier import Notification
 
-from fml.server import MAILGUN_KEY, MAILGUN_DOMAIN, EMAIL, paths
-
-
-class AlarmSoundWorker(threading.Thread):
-
-    def run(self):
-        playsound(os.path.join(paths.RESOURCE_DIRECTORY, 'alarm.wav'))
-
-
-def play_sound():
-    AlarmSoundWorker().start()
+from fml.server import MAILGUN_KEY, MAILGUN_DOMAIN, EMAIL
 
 
 def notify(
