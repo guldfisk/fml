@@ -1023,11 +1023,11 @@ def list_projects() -> None:
 
 @project_service.command(name = 'new')
 @click.argument('name', type = str, required = True)
-def create_tag(
+def create_project(
     name: str,
 ) -> None:
     """
-    Create a new tag
+    Create a new project
     """
     output.print_project(
         Client().create_project(name)
@@ -1042,7 +1042,7 @@ def modify_project_default_priority_filter(
     level: str,
 ) -> None:
     """
-    Create a new tag
+    Modify default priority level for new todos
     """
     output.print_project(
         Client().modify_project_default_priority_filter(name, None if level.lower() == 'none' else level),
