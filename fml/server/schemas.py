@@ -126,7 +126,7 @@ class ToDoSchema(Schema[models.ToDo]):
     comments = fields.Lambda(lambda todo: [comment.text for comment in todo.comments])
     project = fields.Lambda(lambda todo: todo.project.name)
 
-    priority = fields.Lambda(lambda todo: todo.priority.name)
+    priority = fields.Related(PrioritySchema(), read_only = True)
 
     created_at = fields.Datetime(read_only = True)
     finished_at = fields.Datetime(read_only = True)

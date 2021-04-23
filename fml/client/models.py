@@ -269,7 +269,7 @@ class ToDo(RemoteModel):
         tags: t.Sequence[str],
         comments: t.Sequence[str],
         project: str,
-        priority: str,
+        priority: Priority,
         children: t.Optional[t.Sequence[ToDo]] = None,
         parents: t.Optional[t.Sequence[ToDo]] = None,
     ):
@@ -300,7 +300,7 @@ class ToDo(RemoteModel):
             tags = remote['tags'],
             comments = remote['comments'],
             project = remote['project'],
-            priority = remote['priority'],
+            priority = Priority.from_remote(remote['priority']),
             children = [cls.from_remote(child) for child in remote['children']] if 'children' in remote else None,
             parents = [cls.from_remote(parent) for parent in remote['parents']] if 'parents' in remote else None,
         )
@@ -334,7 +334,7 @@ class ToDo(RemoteModel):
         return self._project
 
     @property
-    def priority(self) -> str:
+    def priority(self) -> Priority:
         return self._priority
 
     @property

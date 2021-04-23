@@ -122,7 +122,10 @@ def print_todos(todos: t.Sequence[models.ToDo], *, show_comments: bool = True) -
                 format_timedelta(todo.elapsed),
                 format_timedelta(todo.duration) if todo.finished_at else '-',
                 Text(todo.status, style = Style(color = v.STATUS_COLOR_MAP[todo.status])),
-                Text(todo.priority, style = Style(color = v.PRIORITY_COLOR_MAP.get(todo.priority, v.C_NEUTRAL))),
+                Text(
+                    todo.priority.name,
+                    style = Style(color = v.PRIORITY_COLOR_MAP.get(todo.priority.level, v.C_NEUTRAL)),
+                ),
                 ', '.join(todo.tags),
                 todo.project,
             ]
