@@ -512,6 +512,8 @@ def alarm_service() -> None:
 @click.option('--seconds', '-s', default = 0, type = int, help = 'Relative offset seconds.')
 @click.option('--minutes', '-m', default = 0, type = int, help = 'Relative offset minutes.')
 @click.option('--hours', '-h', default = 0, type = int, help = 'Relative offset hours.')
+@click.option('--days', '-d', default = 0, type = int, help = 'Relative offset days.')
+@click.option('--weeks', '-w', default = 0, type = int, help = 'Relative offset weeks.')
 @click.option(
     '--retry-delay',
     default = 60,
@@ -536,6 +538,8 @@ def new_alarm(
     seconds: int = 0,
     minutes: int = 0,
     hours: int = 0,
+    days: int = 0,
+    weeks: int = 0,
     retry_delay: int = 60,
     mail: bool = False,
     silent: bool = False,
@@ -545,21 +549,22 @@ def new_alarm(
     Create new alarm.
     """
     if absolute is None:
-        change = datetime.timedelta(
-            seconds = seconds,
-            minutes = minutes,
-            hours = hours,
-        )
-        if not change:
-            print('alarm must be scheduled for future')
-            return
-        target = datetime.datetime.now() + change
+        base_datetime = datetime.datetime.now()
     else:
         try:
-            target = parse_datetime(absolute)
+            base_datetime = parse_datetime(absolute)
         except DateParseException:
             print('invalid datetime format "{}"'.format(absolute))
             return
+    target = base_datetime + datetime.timedelta(
+        seconds = seconds,
+        minutes = minutes,
+        hours = hours,
+        days = days + weeks * 7,
+    )
+    if target < datetime.datetime.now():
+        print('alarm must be scheduled for future')
+        return
 
     output.print_alarm(
         Client().new_alarm(
