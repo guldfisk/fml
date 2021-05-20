@@ -553,8 +553,8 @@ def new_alarm(
     else:
         try:
             base_datetime = parse_datetime(absolute)
-        except DateParseException:
-            print('invalid datetime format "{}"'.format(absolute))
+        except DateParseException as e:
+            print('invalid datetime format "{}" ({})'.format(absolute, e))
             return
     target = base_datetime + datetime.timedelta(
         seconds = seconds,
