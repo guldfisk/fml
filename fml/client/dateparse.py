@@ -41,8 +41,8 @@ def get_next_weekday(weekday: str) -> datetime.datetime:
     return now + datetime.timedelta(
         days = (
             target_weekday - current_weekday
-            if target_weekday >= current_weekday else
-            6 - current_weekday + target_weekday
+            if target_weekday > current_weekday else
+            7 - current_weekday + target_weekday
         )
     )
 
