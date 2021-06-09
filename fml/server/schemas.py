@@ -117,6 +117,11 @@ class ToDoListOptions(Schema):
     minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
 
 
+class AlarmListOptions(Schema):
+    limit = fields.Integer(default = 25)
+    query = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
+
+
 class ToDoSchema(Schema[models.ToDo]):
     id = fields.Integer(read_only = True)
 

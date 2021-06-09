@@ -103,18 +103,18 @@ class Client(object):
             )
         )
 
-    def active_alarms(self, limit: t.Optional[int] = None) -> t.Sequence[models.Alarm]:
+    def active_alarms(self, limit: t.Optional[int] = None, query: t.Optional[str] = None) -> t.Sequence[models.Alarm]:
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/', limit = limit)['alarms']
+            self._make_request('alarms/', limit = limit, query = query)['alarms']
         ]
 
-    def alarm_history(self, limit: t.Optional[int] = 10) -> t.Sequence[models.Alarm]:
+    def alarm_history(self, limit: t.Optional[int] = 10, query: t.Optional[str] = None) -> t.Sequence[models.Alarm]:
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/history/', limit = limit)['alarms']
+            self._make_request('alarms/history/', limit = limit, query = query)['alarms']
         ]
 
     def cancel_all_alarms(self) -> t.Sequence[models.Alarm]:
@@ -588,13 +588,16 @@ def new_alarm(
     show_default = True,
     help = 'Include all alarms, not just active ones.',
 )
+@click.option('--query', '-q', type = str, help = 'Filter on text or id.')
 @click.option('--limit', '-l', default = 10, type = int, help = 'Limit.')
-def list_alarms(history: bool = False, limit: int = 10) -> None:
+def list_alarms(history: bool = False, query: t.Optional[str] = None, limit: int = 10) -> None:
     """
     List active alarms.
     """
     output.print_alarms(
-        Client().alarm_history(limit = limit) if history else Client().active_alarms(limit = limit)
+        Client().alarm_history(limit = limit, query = query)
+        if history else
+        Client().active_alarms(limit = limit, query = query)
     )
 
 

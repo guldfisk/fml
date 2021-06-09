@@ -1,15 +1,21 @@
+import typing as t
 import datetime
+from abc import abstractmethod
 
 from flask import request, Blueprint
+from flask.views import View
 from flask_api import status
 from flask_api.request import APIRequest
 
+from sqlalchemy.orm import Query
+
 from hardcandy.schema import DeserializationError
 
-from fml.server import models
+from fml.server import models, schemas
 from fml.server.schemas import AlarmSchema
 from fml.server.session import SessionContainer as SC
 from fml.server.timer import MANAGER
+from fml.server.views.utils import inject_schema
 
 
 alarm_views = Blueprint('alarm_views', __name__, url_prefix = '/alarms')
@@ -37,38 +43,62 @@ def create_alarm():
     return schema.serialize(alarm)
 
 
-@alarm_views.route('/', methods = ['GET'])
-def view_alarms():
-    limit = request.args.get('limit')
+class BaseAlarmList(View):
 
-    alarms = models.Alarm.active_alarms(SC.session).order_by(models.Alarm.end_at).limit(limit)
+    @abstractmethod
+    def get_base_query(self) -> Query:
+        pass
 
-    schema = AlarmSchema()
+    @abstractmethod
+    def order_alarms(self, query: Query) -> Query:
+        pass
 
-    return {
-        'alarms': [
-            schema.serialize(alarm)
-            for alarm in
-            alarms
-        ]
-    }
+    @inject_schema(schemas.AlarmListOptions())
+    def dispatch_request(
+        self,
+        limit: int,
+        query: t.Union[int, str, None],
+    ):
+        alarms = self.get_base_query()
+
+        if isinstance(query, int):
+            alarms = alarms.filter(models.Alarm.id == query)
+        elif isinstance(query, str):
+            alarms = alarms.filter(models.Alarm.text.contains(query))
+
+        schema = AlarmSchema()
+
+        return {
+            'alarms': [
+                schema.serialize(alarm)
+                for alarm in
+                self.order_alarms(alarms).limit(limit)
+            ]
+        }
 
 
-@alarm_views.route('/history/', methods = ['GET'])
-def alarms_history():
-    limit = request.args.get('limit')
+class ViewAlarms(BaseAlarmList):
 
-    alarms = SC.session.query(models.Alarm).order_by(models.Alarm.started_at.desc()).limit(limit)
+    def get_base_query(self) -> Query:
+        return models.Alarm.active_alarms(SC.session)
 
-    schema = AlarmSchema()
+    def order_alarms(self, query: Query) -> Query:
+        return query.order_by(models.Alarm.end_at)
 
-    return {
-        'alarms': [
-            schema.serialize(alarm)
-            for alarm in
-            alarms
-        ]
-    }
+
+alarm_views.add_url_rule('/', methods = ['GET'], view_func = ViewAlarms.as_view('view_alarms'))
+
+
+class AlarmHistory(BaseAlarmList):
+
+    def get_base_query(self) -> Query:
+        return SC.session.query(models.Alarm)
+
+    def order_alarms(self, query: Query) -> Query:
+        return query.order_by(models.Alarm.started_at.desc())
+
+
+alarm_views.add_url_rule('/history/', methods = ['GET'], view_func = AlarmHistory.as_view('alarm_history'))
 
 
 @alarm_views.route('/cancel/<int:pk>/', methods = ['PATCH'])
