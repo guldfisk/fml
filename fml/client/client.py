@@ -3,17 +3,38 @@ import logging
 import os
 import typing as t
 import datetime
+from abc import abstractmethod
 
 import requests
 import click
 
+from rich.style import Style
+from rich.text import Text
+from rich import print as rich_print
+
 from fml import sound
-from fml.client import models
+from fml.client import models, values
 from fml.client import output
 from fml.client.dateparse import parse_datetime, DateParseException
 
 
 class ClientError(Exception):
+
+    @property
+    @abstractmethod
+    def message(self) -> str:
+        pass
+
+    def show(self):
+        rich_print(
+            Text(
+                self.message,
+                style = Style(color = values.C_ERROR),
+            )
+        )
+
+
+class SimpleClientError(ClientError):
 
     def __init__(self, message: str) -> None:
         super().__init__()
@@ -22,6 +43,42 @@ class ClientError(Exception):
     @property
     def message(self) -> str:
         return self._message
+
+
+class ClientJsonError(ClientError):
+
+    def __init__(self, message: t.Any) -> None:
+        super().__init__()
+        self._message = message
+
+    @property
+    def message(self) -> str:
+        return json.dumps(self._message, indent = 4)
+
+
+class ClientMultiObjectContext(ClientError):
+    type_view_map = {'todo': (models.ToDo, output.print_todos)}
+
+    def __init__(self, message: t.Any) -> None:
+        super().__init__()
+        self._message = message
+
+    @property
+    def message(self) -> str:
+        return self._message['message']
+
+    def show(self):
+        super().show()
+        candidate_class, candidate_printer = self.type_view_map.get(self._message['candidate_type'], (None, None))
+        if not candidate_class:
+            print('unknown candidate type "{}"'.format(self._message['candidate_type']))
+        else:
+            candidate_printer(
+                [candidate_class.from_remote(c) for c in self._message['candidates']]
+            )
+
+
+EXCEPTION_TYPE_MAP = {'multiple_candidate_error': ClientMultiObjectContext}
 
 
 class Client(object):
@@ -53,14 +110,16 @@ class Client(object):
             response.raise_for_status()
         except Exception:
             try:
-                message = json.dumps(response.json(), indent = 4)
+                message = response.json()
+                if message['error_type'] in EXCEPTION_TYPE_MAP:
+                    raise EXCEPTION_TYPE_MAP[message['error_type']](message)
+                raise ClientJsonError(message)
             except ValueError:
-                message = (
+                raise SimpleClientError(
                     response.content.decode('utf-8')
                     if isinstance(response.content, bytes) else
                     str(response.content)
                 )
-            raise ClientError(message)
         return response.json()
 
     def new_alarm(
@@ -230,21 +289,21 @@ class Client(object):
             )
         )
 
-    def cancel_todo(self, target: str) -> models.ToDo:
+    def cancel_todo(self, target: str, project: t.Optional[str] = None) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
                 'todo/cancel/',
                 'PATCH',
-                {'target': target},
+                {'target': target, 'project': project},
             )
         )
 
-    def finish_todo(self, target: str) -> models.ToDo:
+    def finish_todo(self, target: str, project: t.Optional[str] = None) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
                 'todo/finish/',
                 'PATCH',
-                {'target': target},
+                {'target': target, 'project': project},
             )
         )
 
@@ -720,20 +779,22 @@ def comment_todo(
 
 @todo_service.command(name = 'cancel')
 @click.argument('target', type = str)
-def cancel_todo(target: str) -> None:
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
+def cancel_todo(target: str, project: t.Optional[str] = None) -> None:
     """
     Cancel todo. Target is either id or partial text of todo.
     """
-    output.print_todo(Client().cancel_todo(target))
+    output.print_todo(Client().cancel_todo(target, get_default_project(project)))
 
 
 @todo_service.command(name = 'finish')
 @click.argument('target', type = str)
-def finish_todo(target: str) -> None:
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
+def finish_todo(target: str, project: t.Optional[str] = None) -> None:
     """
     Finish todo. Target is either id or partial text of todo.
     """
-    output.print_todo(Client().finish_todo(target))
+    output.print_todo(Client().finish_todo(target, get_default_project(project)))
 
 
 @todo_service.command(name = 'list')
@@ -1147,4 +1208,4 @@ if __name__ == '__main__':
     try:
         main()
     except ClientError as e:
-        print(e.message)
+        e.show()

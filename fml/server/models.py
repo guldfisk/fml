@@ -132,6 +132,28 @@ class StringIdentified(Base):
         except MultipleResultsFound:
             return None
 
+    @classmethod
+    def get_list_for_identifier(
+        cls,
+        session: Session,
+        identifier: t.Union[str, int, None],
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.List[StringIdentified]:
+        target = target or cls
+        base_query = session.query(target) if base_query is None else base_query
+
+        if not identifier:
+            return [cls.get_for_no_identifier(session, target = target, base_query = base_query)]
+        if isinstance(identifier, int):
+            return list(base_query.filter(cls.id == identifier))
+
+        return list(
+            base_query.filter(
+                cls.text_identifier.contains(identifier)
+            )
+        )
+
 
 class Tag(StringIdentified):
     __tablename__ = 'tag'

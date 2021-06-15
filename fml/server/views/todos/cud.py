@@ -113,28 +113,29 @@ class ModifyTodo(View):
     def _modify_todo(self, todo: models.ToDo) -> None:
         pass
 
-    def dispatch_request(self):
-        target = request.data.get('target')
+    @inject_schema(schemas.UpdateTodoSchema(), use_args = False)
+    def dispatch_request(self, target: t.Union[int, str], project: models.Project):
+        todos = models.ToDo.get_list_for_identifier(
+            session = SC.session,
+            identifier = target,
+            base_query = models.ToDo.active_todos(SC.session).filter(models.ToDo.project_id == project.id),
+        )
+        if not todos:
+            return 'invalid todo', status.HTTP_400_BAD_REQUEST
+        if len(todos) > 1:
+            schema = ToDoSchema()
+            return {
+                       'error_type': 'multiple_candidate_error',
+                       'message': 'ambiguous target',
+                       'candidate_type': 'todo',
+                       'candidates': [
+                           schema.serialize(todo)
+                           for todo in
+                           sorted(todos, key = lambda todo: (-todo.priority.level, todo.created_at), reverse = True)
+                       ]
+                   }, status.HTTP_400_BAD_REQUEST
 
-        if target is None:
-            return 'no target', status.HTTP_400_BAD_REQUEST
-
-        try:
-            target = int(target)
-        except ValueError:
-            try:
-                todo: t.Optional[models.ToDo] = models.ToDo.active_todos(SC.session).filter(
-                    models.ToDo.text.contains(target)
-                ).scalar()
-            except MultipleResultsFound:
-                return 'ambiguous target', status.HTTP_400_BAD_REQUEST
-
-        else:
-            todo: t.Optional[models.ToDo] = models.ToDo.active_todos(SC.session).filter(
-                models.ToDo.id == target).scalar()
-
-        if todo is None:
-            return 'no such todo', status.HTTP_404_NOT_FOUND
+        todo = todos[0]
 
         self._modify_todo(todo)
 

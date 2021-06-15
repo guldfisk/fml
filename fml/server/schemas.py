@@ -101,6 +101,11 @@ class CreateTodoSchema(Schema):
     )
 
 
+class UpdateTodoSchema(Schema):
+    target = fields.CoalesceField([fields.Integer(), fields.Text()])
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+
+
 class UpdateDependencySchema(Schema):
     parent = custom_fields.StringIdentifiedField(models.ToDo, base_query_getter = lambda s: models.ToDo.active_todos(s))
     child = custom_fields.StringIdentifiedField(models.ToDo, base_query_getter = lambda s: models.ToDo.active_todos(s))
