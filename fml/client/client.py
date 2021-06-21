@@ -111,7 +111,7 @@ class Client(object):
         except Exception:
             try:
                 message = response.json()
-                if message['error_type'] in EXCEPTION_TYPE_MAP:
+                if message.get('error_type') in EXCEPTION_TYPE_MAP:
                     raise EXCEPTION_TYPE_MAP[message['error_type']](message)
                 raise ClientJsonError(message)
             except ValueError:

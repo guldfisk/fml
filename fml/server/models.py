@@ -5,7 +5,7 @@ import datetime
 from enum import Enum as _Enum
 
 from sqlalchemy import (
-    Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_, ForeignKey, UniqueConstraint, asc
+    Integer, String, Boolean, Enum, DateTime, Column, or_, and_, not_, ForeignKey, UniqueConstraint, asc, Text
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -170,7 +170,7 @@ class Comment(Base):
     __tablename__ = 'comment'
 
     id = Column(Integer, primary_key = True)
-    text = Column(String(127), nullable = False)
+    text = Column(Text, nullable = False)
     created_at = Column(DateTime, default = datetime.datetime.now)
     todo_id = Column(
         Integer,
