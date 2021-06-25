@@ -4,9 +4,11 @@ import typing as t
 from flask import request
 from flask_api import status
 
-from fml.server import models
-from fml.server.session import SessionContainer as SC
 from hardcandy.schema import DeserializationError, Schema
+
+from fml.server import models
+from fml.server.exceptions import RequestError
+from fml.server.session import SessionContainer as SC
 
 
 DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
@@ -47,7 +49,7 @@ def inject_tag(f: t.Callable):
 
 
 def inject_schema(schema: Schema, use_args: bool = True):
-    def wrapper(f: t.Callable):
+    def wrapper(f: t.Callable) -> t.Callable:
         @functools.wraps(f)
         def wrapped(*args, **kwargs):
             try:
@@ -60,3 +62,14 @@ def inject_schema(schema: Schema, use_args: bool = True):
         return wrapped
 
     return wrapper
+
+
+def with_errors(f: t.Callable) -> t.Callable:
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except RequestError as e:
+            return e.serialize(), status.HTTP_400_BAD_REQUEST
+
+    return wrapped

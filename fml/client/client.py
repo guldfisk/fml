@@ -68,13 +68,16 @@ class ClientMultiObjectContext(ClientError):
         return self._message['message']
 
     def show(self):
-        super().show()
         candidate_class, candidate_printer = self.type_view_map.get(self._message['candidate_type'], (None, None))
         if not candidate_class:
             print('unknown candidate type "{}"'.format(self._message['candidate_type']))
         else:
             candidate_printer(
-                [candidate_class.from_remote(c) for c in self._message['candidates']]
+                [candidate_class.from_remote(c) for c in self._message['candidates']],
+                title = Text(
+                    self.message,
+                    style = Style(color = values.C_ERROR),
+                ),
             )
 
 
@@ -459,6 +462,7 @@ class Client(object):
         self,
         todo: t.Union[int, str],
         priority: t.Union[int, str],
+        project: t.Optional[str] = None,
         recursive: bool = False,
     ) -> models.ToDo:
         return models.ToDo.from_remote(
@@ -468,6 +472,7 @@ class Client(object):
                 data = {
                     'todo': todo,
                     'priority': priority,
+                    'project': project,
                     'recursive': recursive,
                 }
             )
@@ -1182,6 +1187,7 @@ def list_priorities(project: str) -> None:
 @priority_service.command(name = 'mod')
 @click.argument('todo', type = str, required = True)
 @click.argument('priority', type = str, required = True)
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 @click.option(
     '--recursive',
     '-r',
@@ -1194,13 +1200,19 @@ def list_priorities(project: str) -> None:
 def change_priority(
     todo: str,
     priority: str,
+    project: t.Optional[str],
     recursive: bool = False,
 ) -> None:
     """
     Modify todo priority.
     """
     output.print_todo(
-        Client().modify_todo_priority(todo, priority, recursive = recursive)
+        Client().modify_todo_priority(
+            todo,
+            priority,
+            project = get_default_project(project),
+            recursive = recursive,
+        )
     )
 
 

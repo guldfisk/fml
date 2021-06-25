@@ -18,9 +18,10 @@ from hardcandy.schema import DeserializationError, Field, Schema
 from fml.server import fields as custom_fields
 from fml.server import models
 from fml.server import schemas
+from fml.server.retrieve import get_todo_for_project_and_identifier
 from fml.server.schemas import ToDoSchema
 from fml.server.session import SessionContainer as SC
-from fml.server.views.utils import inject_schema
+from fml.server.views.utils import inject_schema, with_errors
 
 
 todo_cud_views = Blueprint('todo_crud_views', __name__)
@@ -113,29 +114,10 @@ class ModifyTodo(View):
     def _modify_todo(self, todo: models.ToDo) -> None:
         pass
 
+    @with_errors
     @inject_schema(schemas.UpdateTodoSchema(), use_args = False)
     def dispatch_request(self, target: t.Union[int, str], project: models.Project):
-        todos = models.ToDo.get_list_for_identifier(
-            session = SC.session,
-            identifier = target,
-            base_query = models.ToDo.active_todos(SC.session).filter(models.ToDo.project_id == project.id),
-        )
-        if not todos:
-            return 'invalid todo', status.HTTP_400_BAD_REQUEST
-        if len(todos) > 1:
-            schema = ToDoSchema()
-            return {
-                       'error_type': 'multiple_candidate_error',
-                       'message': 'ambiguous target',
-                       'candidate_type': 'todo',
-                       'candidates': [
-                           schema.serialize(todo)
-                           for todo in
-                           sorted(todos, key = lambda todo: (-todo.priority.level, todo.created_at), reverse = True)
-                       ]
-                   }, status.HTTP_400_BAD_REQUEST
-
-        todo = todos[0]
+        todo = get_todo_for_project_and_identifier(SC.session, target, project)
 
         self._modify_todo(todo)
 

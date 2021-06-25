@@ -1,3 +1,5 @@
+import typing as t
+
 from sqlalchemy.exc import IntegrityError
 
 from flask import request, Blueprint
@@ -6,9 +8,10 @@ from flask_api.request import APIRequest
 
 from hardcandy.schema import DeserializationError
 
-from fml.server.views.utils import inject_project
 from fml.server import schemas, models
+from fml.server.retrieve import get_todo_for_project_and_identifier
 from fml.server.session import SessionContainer as SC
+from fml.server.views.utils import inject_project, inject_schema, with_errors
 
 
 todo_priority_views = Blueprint('todo_priority_views', __name__, url_prefix = '/priorities')
@@ -91,18 +94,20 @@ def swap_levels(project_id: int):
 
 
 @todo_priority_views.route('/modify', methods = ['PATCH'])
-def modify_priority_level():
-    try:
-        data = schemas.ModifyPrioritySchema().deserialize_raw(request.data)
-    except DeserializationError as e:
-        return e.serialized, status.HTTP_400_BAD_REQUEST
-
-    todo = data['todo']
+@with_errors
+@inject_schema(schemas.ModifyPrioritySchema(), use_args = False)
+def modify_priority_level(
+    todo: t.Union[str, int],
+    priority: t.Union[str, int],
+    project: models.Project,
+    recursive: bool,
+):
+    todo = get_todo_for_project_and_identifier(SC.session, todo, project)
 
     priority_id = models.Priority.get_for_identifier_and_project(
         session = SC.session,
         project_id = todo.project_id,
-        identifier = data['priority'],
+        identifier = priority,
         target = models.Priority.id,
     )
     if priority_id is None:
@@ -110,7 +115,7 @@ def modify_priority_level():
 
     todo.priority_id = priority_id
 
-    if data['recursive']:
+    if recursive:
         for child in todo.traverse_children():
             child.priority_id = priority_id
 

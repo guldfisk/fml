@@ -10,8 +10,12 @@ from fml.client.utils import format_timedelta
 from fml.client import values as v
 
 
-def _print_striped_table(headers: t.Sequence[str], rows: t.Iterable[t.Sequence[RenderableType]]):
-    table = Table()
+def _print_striped_table(
+    headers: t.Sequence[str],
+    rows: t.Iterable[t.Sequence[RenderableType]],
+    title: t.Optional[str] = None,
+):
+    table = Table(title = title)
 
     for column_name in headers:
         table.add_column(column_name)
@@ -53,7 +57,10 @@ def print_priorities(priorities: t.Sequence[models.Priority]) -> None:
         [
             [
                 str(priority.pk),
-                priority.name,
+                Text(
+                    priority.name,
+                    style = Style(color = v.PRIORITY_COLOR_MAP.get(priority.level, v.C_NEUTRAL)),
+                ),
                 priority.project,
                 str(priority.level),
                 str(priority.is_default),
@@ -103,7 +110,12 @@ def _iterate_todos(todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterato
         yield from _iterate_todos(todo.children, indent + 1)
 
 
-def print_todos(todos: t.Sequence[models.ToDo], *, show_comments: bool = True) -> None:
+def print_todos(
+    todos: t.Sequence[models.ToDo],
+    *,
+    show_comments: bool = True,
+    title: t.Optional[str] = None,
+) -> None:
     _print_striped_table(
         ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Priority', 'Tags', 'Project'],
         (
@@ -132,4 +144,5 @@ def print_todos(todos: t.Sequence[models.ToDo], *, show_comments: bool = True) -
             for (todo, indent) in
             _iterate_todos(todos)
         ),
+        title = title,
     )
