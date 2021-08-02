@@ -11,6 +11,7 @@ from fml.client.utils import format_timedelta
 Serialized = t.Mapping[str, t.Any]
 
 DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
+ALARM_DATETIME_FORMAT = '%d/%m/%Y %a %H:%M:%S'
 
 
 class RemoteModel(ABC):
@@ -162,6 +163,10 @@ class Alarm(RemoteModel):
     @property
     def elapsed(self) -> datetime.timedelta:
         return max(datetime.datetime.now() - self._started_at, datetime.timedelta(seconds = 0))
+
+    @property
+    def duration(self) -> datetime.timedelta:
+        return self._end_at - self._started_at
 
 
 class Project(RemoteModel):

@@ -82,15 +82,16 @@ def print_alarm(alarm: models.Alarm) -> None:
 
 def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
     _print_striped_table(
-        ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'flags', 'status'],
+        ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'Duration', 'flags', 'status'],
         (
             [
                 str(alarm.pk),
                 alarm.text,
-                alarm.started_at.strftime(models.DATETIME_FORMAT),
-                alarm.end_at.strftime(models.DATETIME_FORMAT),
+                alarm.started_at.strftime(models.ALARM_DATETIME_FORMAT),
+                alarm.end_at.strftime(models.ALARM_DATETIME_FORMAT),
                 alarm.eta,
                 format_timedelta(alarm.elapsed),
+                format_timedelta(alarm.duration),
                 ' '.join(alarm.flags),
                 Text(alarm.status, style = Style(color = v.ALARM_STATUS_COLOR_MAP[alarm.status])),
             ]
