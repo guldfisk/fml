@@ -43,7 +43,8 @@ class TaggedSchema(Schema[models.Tagged]):
 
 
 class CommentSchema(Schema):
-    todo = custom_fields.StringIdentifiedField(models.ToDo)
+    target = fields.CoalesceField([fields.Integer(), fields.Text()])
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
     comment = fields.Text()
 
 
@@ -154,10 +155,8 @@ class ModifyPrioritySchema(Schema[models.Tagged]):
 
 
 class ModifyToDoSchema(Schema):
-    todo = custom_fields.StringIdentifiedField(
-        models.ToDo,
-        base_query_getter = lambda s: models.ToDo.active_todos(s),
-    )
+    target = fields.CoalesceField([fields.Integer(), fields.Text()])
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
     description = fields.Text()
 
 

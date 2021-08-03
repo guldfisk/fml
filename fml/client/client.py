@@ -16,6 +16,7 @@ from fml import sound
 from fml.client import models, values
 from fml.client import output
 from fml.client.dateparse import parse_datetime, DateParseException
+from fml.client.output import show_points
 
 
 class ClientError(Exception):
@@ -264,11 +265,12 @@ class Client(object):
             )
         )
 
-    def get_todo(self, todo: t.Union[str, int]) -> models.ToDo:
+    def get_todo(self, todo: t.Union[str, int], project: t.Union[str, int, None] = None) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
                 'todo/single/',
-                todo = todo,
+                target = todo,
+                project = project,
             )
         )
 
@@ -446,13 +448,15 @@ class Client(object):
         self,
         todo: t.Union[int, str],
         comment: str,
+        project: t.Union[int, str, None] = None,
     ) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
                 'todo/comment/',
                 method = 'POST',
                 data = {
-                    'todo': todo,
+                    'target': todo,
+                    'project': project,
                     'comment': comment,
                 }
             )
@@ -482,13 +486,15 @@ class Client(object):
         self,
         todo: t.Union[int, str],
         description: str,
+        project: t.Union[int, str, None] = None,
     ) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
                 'todo/description/',
                 method = 'PATCH',
                 data = {
-                    'todo': todo,
+                    'target': todo,
+                    'project': project,
                     'description': description,
                 }
             )
@@ -585,8 +591,14 @@ def alarm_service() -> None:
     help = 'Delay in seconds for re-notification delay. Only relevant when acknowledgment is required.',
 )
 @click.option('--mail', default = False, type = bool, is_flag = True, show_default = True, help = 'Also send email.')
-@click.option('--silent', default = False, type = bool, is_flag = True, show_default = True,
-              help = 'Don\'t play sound.')
+@click.option(
+    '--silent',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Don\'t play sound.',
+)
 @click.option(
     '--requires-acknowledgement',
     '--ack',
@@ -747,59 +759,64 @@ def new_todo(
 @todo_service.command(name = 'mod')
 @click.argument('todo', type = str, required = True)
 @click.argument('description', type = str, required = False)
-def change_priority(
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
+def modify_todo_description(
     todo: str,
     description: t.Optional[str],
+    project: t.Optional[str],
 ) -> None:
     """
     Modify todo description.
     """
     client = Client()
+    project = get_default_project(project)
     if description is None:
-        existing_todo = client.get_todo(todo)
+        existing_todo = client.get_todo(todo, project = project)
         description = click.edit(existing_todo.text)
         if description is None:
             print('aborted')
             return
         description = description.rstrip('\n')
     output.print_todo(
-        Client().modify_todo_description(todo, description)
+        Client().modify_todo_description(todo, description, project = project)
     )
 
 
 @todo_service.command(name = 'com')
 @click.argument('todo', type = str, required = True)
 @click.argument('comment', type = str, required = True)
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 def comment_todo(
     todo: str,
     comment: str,
+    project: t.Optional[str],
 ) -> None:
     """
     Add comment to todo.
     """
     output.print_todo(
-        Client().comment_todo(todo, comment)
+        Client().comment_todo(todo, comment, project = get_default_project(project))
     )
 
 
 @todo_service.command(name = 'cancel')
-@click.argument('target', type = str)
+@click.argument('target', type = str, required = True, nargs = -1)
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
-def cancel_todo(target: str, project: t.Optional[str] = None) -> None:
+def cancel_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> None:
     """
     Cancel todo. Target is either id or partial text of todo.
     """
-    output.print_todo(Client().cancel_todo(target, get_default_project(project)))
+    output.print_todo(Client().cancel_todo(' '.join(target), get_default_project(project)))
 
 
 @todo_service.command(name = 'finish')
-@click.argument('target', type = str)
+@click.argument('target', type = str, required = True, nargs = -1)
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
-def finish_todo(target: str, project: t.Optional[str] = None) -> None:
+def finish_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> None:
     """
     Finish todo. Target is either id or partial text of todo.
     """
-    output.print_todo(Client().finish_todo(target, get_default_project(project)))
+    output.print_todo(Client().finish_todo(' '.join(target), get_default_project(project)))
 
 
 @todo_service.command(name = 'list')
@@ -878,29 +895,6 @@ def list_todos(
     )
 
 
-def _show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]], chart: bool = False) -> None:
-    import numpy as np
-    import gnuplotlib as gp
-
-    if not points:
-        print('No data')
-        return
-
-    args = {
-        'unset': 'grid',
-        'set': ('xdata time', 'format x "%d/%m/%y"'),
-    }
-
-    if not chart:
-        args['terminal'] = 'dumb 160 40'
-
-    gp.plot(
-        np.asarray([date.timestamp() for date, _ in points]),
-        np.asarray([active for _, active in points]),
-        **args,
-    )
-
-
 @todo_service.command(name = 'burndown')
 @click.option(
     '--chart',
@@ -943,7 +937,7 @@ def todos_burn_down(
     """
     Show todo burndown chart.
     """
-    _show_points(
+    show_points(
         Client().todo_burn_down(
             project = get_default_project(project),
             tag = tag,
@@ -997,7 +991,7 @@ def todos_throughput(
     """
     Show todo throughput chart.
     """
-    _show_points(
+    show_points(
         Client().todo_throughput(
             project = get_default_project(project),
             tag = tag,
@@ -1027,14 +1021,14 @@ def list_tags() -> None:
 
 
 @tag_service.command(name = 'new')
-@click.argument('tag', type = str, required = True)
+@click.argument('tag', type = str, required = True, nargs = -1)
 def create_tag(
-    tag: str,
+    tag: t.Sequence[str],
 ) -> None:
     """
     Create a new tag
     """
-    Client().create_tag(tag)
+    Client().create_tag(' '.join(tag))
     print('ok')
 
 
@@ -1065,7 +1059,7 @@ def tag_todo(
 @todo_service.command(name = 'dep')
 @click.argument('parent', type = str, required = True)
 @click.argument('task', type = str, required = True)
-def tag_todo(
+def register_dependency(
     parent: str,
     task: str,
 ) -> None:
@@ -1109,17 +1103,17 @@ def create_project(
 
 
 @project_service.command(name = 'mod')
-@click.argument('name', type = str, required = True)
+@click.argument('project', type = str, required = True)
 @click.argument('level', type = str, required = True)
 def modify_project_default_priority_filter(
-    name: str,
+    project: str,
     level: str,
 ) -> None:
     """
     Modify default priority level for new todos
     """
     output.print_project(
-        Client().modify_project_default_priority_filter(name, None if level.lower() == 'none' else level),
+        Client().modify_project_default_priority_filter(project, None if level.lower() == 'none' else level),
     )
 
 
@@ -1132,11 +1126,11 @@ def priority_service() -> None:
 
 
 @priority_service.command(name = 'new')
-@click.argument('name', type = str, required = True)
+@click.argument('name', type = str, required = True, nargs = -1)
 @click.option('--project', '-p', type = str, help = 'Project.')
 @click.option('--level', '-l', default = 0, type = int, help = 'Level.')
 def new_priority(
-    name: str,
+    name: t.Sequence[str],
     project: str,
     level: int,
 ) -> None:
@@ -1145,7 +1139,7 @@ def new_priority(
     """
     output.print_priority(
         Client().new_priority(
-            name = name,
+            name = ' '.join(name),
             level = level,
             project = get_default_project(project),
         )

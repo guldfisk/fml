@@ -13,9 +13,8 @@ from flask_api import status
 from flask_api.request import APIRequest
 
 from hardcandy import fields
-from hardcandy.schema import DeserializationError, Field, Schema
+from hardcandy.schema import DeserializationError, Field
 
-from fml.server import fields as custom_fields
 from fml.server import models
 from fml.server import schemas
 from fml.server.retrieve import get_todo_for_project_and_identifier
@@ -102,8 +101,10 @@ def create_todo():
 
 
 @todo_cud_views.route('/todo/description/', methods = ['PATCH'])
+@with_errors
 @inject_schema(schemas.ModifyToDoSchema(), use_args = False)
-def modify_todo_description(todo: models.ToDo, description: str):
+def modify_todo_description(target: t.Union[int, str], project: models.Project, description: str):
+    todo = get_todo_for_project_and_identifier(SC.session, target, project)
     todo.text = description
     SC.session.commit()
     return schemas.ToDoSchema().serialize(todo)
@@ -149,9 +150,10 @@ todo_cud_views.add_url_rule('/todo/finish/', methods = ['PATCH'], view_func = Fi
 
 
 @todo_cud_views.route('/todo/single/', methods = ['GET'])
-@inject_schema(Schema({'todo': custom_fields.StringIdentifiedField(models.ToDo)}))
-def get_todo(todo: models.ToDo):
-    return ToDoSchema().serialize(todo)
+@with_errors
+@inject_schema(schemas.UpdateTodoSchema())
+def get_todo(target: t.Union[int, str], project: models.Project):
+    return ToDoSchema().serialize(get_todo_for_project_and_identifier(SC.session, target, project))
 
 
 class BaseToDoList(View):

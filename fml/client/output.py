@@ -1,3 +1,4 @@
+import datetime
 import typing as t
 
 from rich.console import Console, RenderableType
@@ -146,4 +147,27 @@ def print_todos(
             _iterate_todos(todos)
         ),
         title = title,
+    )
+
+
+def show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]], chart: bool = False) -> None:
+    import numpy as np
+    import gnuplotlib as gp
+
+    if not points:
+        print('No data')
+        return
+
+    args = {
+        'unset': 'grid',
+        'set': ('xdata time', 'format x "%d/%m/%y"'),
+    }
+
+    if not chart:
+        args['terminal'] = 'dumb 160 40'
+
+    gp.plot(
+        np.asarray([date.timestamp() for date, _ in points]),
+        np.asarray([active for _, active in points]),
+        **args,
     )
