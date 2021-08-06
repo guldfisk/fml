@@ -7,8 +7,9 @@ from rich.style import Style
 from rich.text import Text
 
 from fml.client import models
-from fml.client.utils import format_timedelta
 from fml.client import values as v
+from fml.client.utils import format_timedelta
+from fml.client.values import ALARM_DATETIME_FORMAT, DATETIME_FORMAT
 
 
 def _print_striped_table(
@@ -38,7 +39,7 @@ def print_projects(project: t.Sequence[models.Project]) -> None:
             [
                 str(project.pk),
                 project.name,
-                project.created_at.strftime(models.DATETIME_FORMAT),
+                project.created_at.strftime(DATETIME_FORMAT),
                 str(project.is_default),
                 str(project.default_priority_filter),
             ]
@@ -65,7 +66,7 @@ def print_priorities(priorities: t.Sequence[models.Priority]) -> None:
                 priority.project,
                 str(priority.level),
                 str(priority.is_default),
-                priority.created_at.strftime(models.DATETIME_FORMAT),
+                priority.created_at.strftime(DATETIME_FORMAT),
             ]
             for priority in
             priorities
@@ -88,8 +89,8 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
             [
                 str(alarm.pk),
                 alarm.text,
-                alarm.started_at.strftime(models.ALARM_DATETIME_FORMAT),
-                alarm.end_at.strftime(models.ALARM_DATETIME_FORMAT),
+                alarm.started_at.strftime(ALARM_DATETIME_FORMAT),
+                alarm.end_at.strftime(ALARM_DATETIME_FORMAT),
                 alarm.eta,
                 format_timedelta(alarm.elapsed),
                 format_timedelta(alarm.duration),
@@ -131,8 +132,8 @@ def print_todos(
                     ) if show_comments else
                     ''
                 ),
-                todo.created_at.strftime(models.DATETIME_FORMAT),
-                todo.finished_at.strftime(models.DATETIME_FORMAT) if todo.finished_at else '-',
+                todo.created_at.strftime(DATETIME_FORMAT),
+                todo.finished_at.strftime(DATETIME_FORMAT) if todo.finished_at else '-',
                 format_timedelta(todo.elapsed),
                 format_timedelta(todo.duration) if todo.finished_at else '-',
                 Text(todo.status, style = Style(color = v.STATUS_COLOR_MAP[todo.status])),

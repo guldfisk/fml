@@ -15,8 +15,10 @@ from rich import print as rich_print
 from fml import sound
 from fml.client import models, values
 from fml.client import output
-from fml.client.dateparse import parse_datetime, DateParseException
+from fml.client.dtmath.parse import DTMParseException
 from fml.client.output import show_points
+from fml.client.utils import format_timedelta
+from fml.client.values import ALARM_DATETIME_FORMAT
 
 
 class ClientError(Exception):
@@ -627,11 +629,17 @@ def new_alarm(
     if absolute is None:
         base_datetime = datetime.datetime.now()
     else:
+        from fml.client.dtmath.parse import DTMParser
         try:
-            base_datetime = parse_datetime(absolute)
-        except DateParseException as e:
-            print('invalid datetime format "{}" ({})'.format(absolute, e))
+            base_datetime = DTMParser().parse(absolute)
+        except (DTMParseException, ValueError) as e:
+            print(e)
             return
+        except TypeError:
+            print('can\'t add dates')
+            return
+        if isinstance(base_datetime, datetime.timedelta):
+            base_datetime += datetime.datetime.now()
     target = base_datetime + datetime.timedelta(
         seconds = seconds,
         minutes = minutes,
@@ -1208,6 +1216,24 @@ def change_priority(
             recursive = recursive,
         )
     )
+
+
+@main.command(name = 'dt')
+@click.argument('args', type = str, required = True, nargs = -1)
+def dt_math(args: t.Sequence[str]):
+    from fml.client.dtmath.parse import DTMParser
+
+    try:
+        result = DTMParser().parse(' '.join(args))
+    except (DTMParseException, ValueError) as e:
+        print(e)
+    except TypeError:
+        print('can\'t add dates')
+    else:
+        if isinstance(result, datetime.timedelta):
+            print('delta: ' + format_timedelta(result))
+        else:
+            print('time: ' + result.strftime(ALARM_DATETIME_FORMAT))
 
 
 if __name__ == '__main__':

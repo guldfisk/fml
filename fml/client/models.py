@@ -6,12 +6,10 @@ import typing as t
 from abc import ABC, abstractmethod
 
 from fml.client.utils import format_timedelta
+from fml.client.values import DATETIME_FORMAT
 
 
 Serialized = t.Mapping[str, t.Any]
-
-DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
-ALARM_DATETIME_FORMAT = '%d/%m/%Y %a %H:%M:%S'
 
 
 class RemoteModel(ABC):
