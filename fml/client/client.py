@@ -1235,9 +1235,11 @@ def dt_math(args: t.Sequence[str], format_years: bool):
     Time to next year: ".1/jan - n".
     """
     from fml.client.dtmath.parse import DTMParser
+    import re
 
+    s = re.sub('{(.*?)}', lambda m: str(eval(m.group(1))), ' '.join(args))
     try:
-        result = DTMParser().parse(' '.join(args))
+        result = DTMParser().parse(s)
     except (DTMParseException, ValueError) as e:
         print(e)
     except TypeError:
