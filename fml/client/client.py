@@ -743,16 +743,35 @@ def get_default_project(project: t.Optional[str] = None) -> t.Optional[str]:
 @click.option('--priority', '-i', default = None, type = str, help = 'Priority.')
 @click.option('--tag', '-t', default = (), type = str, help = 'Tags.', multiple = True)
 @click.option('--parent', '-a', default = (), type = str, help = 'Parent.', multiple = True)
+@click.option(
+    '--force',
+    '-f',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Never ask for confirmation.'
+)
 def new_todo(
     text: t.Sequence[str],
     project: t.Optional[str],
     priority: t.Optional[str],
     tag: t.Sequence[str],
     parent: t.Sequence[str],
+    force: bool,
 ) -> None:
     """
     Create new todo.
     """
+    if len(text) == 2 and not force:
+        from fml.client.dtmath.parse import DTMParser
+        try:
+            DTMParser().parse(text[1])
+        except (DTMParseException, ValueError, TypeError):
+            pass
+        else:
+            if not click.confirm('This looks like an alarm. Continue?', default = True):
+                return
     output.print_todo(
         Client().new_todo(
             ' '.join(text),
