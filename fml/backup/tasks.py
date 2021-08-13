@@ -20,7 +20,8 @@ MAILGUN_DOMAIN = _parser['MAIL']['mailgun_domain']
 EMAIL = _parser['MAIL']['owner_email']
 
 
-def backup_db(mail: bool = False) -> None:
+def backup_db(mail: bool = False) -> str:
+    key = f'fml/db-backups/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.dmp'
     with MultipartUpload(
         client = session.Session().client(
             's3',
@@ -30,7 +31,7 @@ def backup_db(mail: bool = False) -> None:
             aws_secret_access_key = _spaces_keys['spaces_secret_key'],
         ),
         bucket = 'phdk',
-        key = f'fml/db-backups/{datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.dmp',
+        key = key,
     ) as out_file:
         s = subprocess.Popen(
             [
@@ -55,6 +56,8 @@ def backup_db(mail: bool = False) -> None:
                     error_message = str(e)
                 send_mail('FML DB backup failed :(', 'error: ' + error_message)
             raise Exception('pg_dump failed')
+
+    return key
 
 
 if __name__ == '__main__':
