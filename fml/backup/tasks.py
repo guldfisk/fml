@@ -61,4 +61,4 @@ def backup_db(mail: bool = False) -> str:
 
 
 if __name__ == '__main__':
-    backup_db()
+    print(backup_db())
