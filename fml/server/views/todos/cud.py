@@ -156,6 +156,7 @@ todo_cud_views.add_url_rule(
 class FinishTodo(ModifyTodo):
 
     def _modify_todo(self, todo: models.ToDo) -> None:
+        todo.state = models.State.COMPLETED
         todo.finished_at = datetime.datetime.now()
 
 
