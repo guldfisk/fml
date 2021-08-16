@@ -133,11 +133,24 @@ class ModifyTodo(View):
 class CancelTodo(ModifyTodo):
 
     def _modify_todo(self, todo: models.ToDo) -> None:
-        todo.canceled = True
+        todo.state = models.State.CANCELED
         todo.finished_at = datetime.datetime.now()
 
 
 todo_cud_views.add_url_rule('/todo/cancel/', methods = ['PATCH'], view_func = CancelTodo.as_view('cancel_todo'))
+
+
+class ToggleWaitingTodo(ModifyTodo):
+
+    def _modify_todo(self, todo: models.ToDo) -> None:
+        todo.state = models.State.WAITING if todo.state == models.State.PENDING else models.State.PENDING
+
+
+todo_cud_views.add_url_rule(
+    '/todo/toggle-wait/',
+    methods = ['PATCH'],
+    view_func = ToggleWaitingTodo.as_view('toggle_wait_todo'),
+)
 
 
 class FinishTodo(ModifyTodo):
@@ -260,6 +273,7 @@ class ToDoList(BaseToDoList):
 
     def order_todos(self, query: Query) -> Query:
         return query.order_by(
+            models.ToDo.state,
             models.Priority.level,
             models.ToDo.created_at.desc(),
         )

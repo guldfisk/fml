@@ -124,7 +124,10 @@ def print_todos(
         (
             [
                 str(todo.pk),
-                '-|' * indent + todo.text + (
+                Text('-|' * indent) + Text(
+                    todo.text,
+                    style = Style(color = v.C_NEUTRAL if todo.status == v.State.WAITING else v.C_WHITE),
+                ) + Text(
                     ''.join(
                         '\n' + '-|' * indent + ' - ' + comment
                         for comment in
@@ -136,7 +139,7 @@ def print_todos(
                 todo.finished_at.strftime(DATETIME_FORMAT) if todo.finished_at else '-',
                 format_timedelta(todo.elapsed),
                 format_timedelta(todo.duration) if todo.finished_at else '-',
-                Text(todo.status, style = Style(color = v.STATUS_COLOR_MAP[todo.status])),
+                Text(todo.status.name, style = Style(color = v.STATUS_COLOR_MAP[todo.status])),
                 Text(
                     todo.priority.name,
                     style = Style(color = v.PRIORITY_COLOR_MAP.get(todo.priority.level, v.C_NEUTRAL)),

@@ -1,3 +1,6 @@
+from enum import Enum
+
+
 DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
 ALARM_DATETIME_FORMAT = '%d/%m/%Y %a %H:%M:%S'
 
@@ -10,11 +13,21 @@ C_ALERT = '#f59947'
 C_IMPORTANT = '#f9f57a'
 C_SUCCESS = '#5fef66'
 C_NEUTRAL = '#bfdcf5'
+C_WHITE = '#ffffff'
+
+
+class State(Enum):
+    PENDING = 'pending'
+    WAITING = 'waiting'
+    COMPLETED = 'completed'
+    CANCELED = 'canceled'
+
 
 STATUS_COLOR_MAP = {
-    'PENDING': C_PENDING,
-    'SUCCESS': C_SUCCESS,
-    'CANCELED': C_ERROR,
+    State.PENDING: C_PENDING,
+    State.WAITING: C_NEUTRAL,
+    State.COMPLETED: C_SUCCESS,
+    State.CANCELED: C_ERROR,
 }
 
 PRIORITY_COLOR_MAP = {

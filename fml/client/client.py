@@ -305,6 +305,15 @@ class Client(object):
             )
         )
 
+    def toggle_todo_waiting(self, target: str, project: t.Optional[str] = None) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/toggle-wait/',
+                'PATCH',
+                {'target': target, 'project': project},
+            )
+        )
+
     def finish_todo(self, target: str, project: t.Optional[str] = None) -> models.ToDo:
         return models.ToDo.from_remote(
             self._make_request(
@@ -834,6 +843,16 @@ def cancel_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> Non
     Cancel todo. Target is either id or partial text of todo.
     """
     output.print_todo(Client().cancel_todo(' '.join(target), get_default_project(project)))
+
+
+@todo_service.command(name = 'wait')
+@click.argument('target', type = str, required = True, nargs = -1)
+@click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
+def toggle_todo_wait(target: t.Sequence[str], project: t.Optional[str] = None) -> None:
+    """
+    Toggle todo waiting status. Target is either id or partial text of todo.
+    """
+    output.print_todo(Client().toggle_todo_waiting(' '.join(target), get_default_project(project)))
 
 
 @todo_service.command(name = 'finish')

@@ -142,7 +142,7 @@ class ToDoSchema(Schema[models.ToDo]):
     created_at = fields.Datetime(read_only = True)
     finished_at = fields.Datetime(read_only = True)
 
-    canceled = fields.Bool(read_only = True)
+    state = fields.Enum(models.State, read_only = True)
 
     children = fields.List(fields.SelfRelated(), read_only = True, source = 'active_children')
 

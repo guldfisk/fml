@@ -6,7 +6,7 @@ import typing as t
 from abc import ABC, abstractmethod
 
 from fml.client.utils import format_timedelta
-from fml.client.values import DATETIME_FORMAT
+from fml.client.values import DATETIME_FORMAT, State
 
 
 Serialized = t.Mapping[str, t.Any]
@@ -268,7 +268,7 @@ class ToDo(RemoteModel):
         text: str,
         created_at: datetime.datetime,
         finished_at: t.Optional[datetime.datetime],
-        canceled: bool,
+        state: State,
         tags: t.Sequence[str],
         comments: t.Sequence[str],
         project: str,
@@ -280,7 +280,7 @@ class ToDo(RemoteModel):
         self._text = text
         self._created_at = created_at
         self._finished_at = finished_at
-        self._canceled = canceled
+        self._state = state
         self._tags = tags
         self._comments = comments
         self._project = project
@@ -299,7 +299,7 @@ class ToDo(RemoteModel):
                 if remote['finished_at'] else
                 None
             ),
-            canceled = remote['canceled'],
+            state = State[remote['state']],
             tags = remote['tags'],
             comments = remote['comments'],
             project = remote['project'],
@@ -322,7 +322,7 @@ class ToDo(RemoteModel):
 
     @property
     def canceled(self) -> bool:
-        return self._canceled
+        return self._state == State.CANCELED
 
     @property
     def tags(self) -> t.Sequence[str]:
@@ -351,12 +351,8 @@ class ToDo(RemoteModel):
         return self._parents
 
     @property
-    def status(self) -> str:
-        if self._canceled:
-            return 'CANCELED'
-        if self._finished_at:
-            return 'SUCCESS'
-        return 'PENDING'
+    def status(self) -> State:
+        return self._state
 
     @property
     def elapsed(self) -> datetime.timedelta:

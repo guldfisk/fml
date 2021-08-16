@@ -296,6 +296,13 @@ class Dependency(Base):
     __table_args__ = (UniqueConstraint('parent_id', 'child_id'),)
 
 
+class State(_Enum):
+    PENDING = 'pending'
+    WAITING = 'waiting'
+    COMPLETED = 'completed'
+    CANCELED = 'canceled'
+
+
 class ToDo(StringIdentified):
     __tablename__ = 'todo'
 
@@ -305,7 +312,7 @@ class ToDo(StringIdentified):
 
     created_at = Column(DateTime, default = datetime.datetime.now)
     finished_at = Column(DateTime, nullable = True)
-    canceled = Column(Boolean, default = False)
+    state = Column(Enum(State), default = State.PENDING)
 
     project_id = Column(
         Integer,
@@ -359,17 +366,16 @@ class ToDo(StringIdentified):
 
     @property
     def cancelable(self) -> bool:
-        return not self.canceled and not self.finished_at
+        return self.state in (State.PENDING, State.WAITING)
 
     @property
     def active(self) -> bool:
-        return not self.canceled and not self.finished_at
+        return self.cancelable
 
     @classmethod
     def active_todos(cls, session: Session, target = None) -> Query:
         return session.query(cls if target is None else target).filter(
-            not_(cls.canceled),
-            cls.finished_at == None,
+            cls.state.in_((State.PENDING, State.WAITING)),
         )
 
 
