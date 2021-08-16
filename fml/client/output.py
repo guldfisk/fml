@@ -120,7 +120,10 @@ def print_todos(
     title: t.Optional[str] = None,
 ) -> None:
     _print_striped_table(
-        ['ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'State', 'Priority', 'Tags', 'Project'],
+        [
+            'ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'Since', 'State', 'Priority', 'Tags',
+            'Project',
+        ],
         (
             [
                 str(todo.pk),
@@ -139,6 +142,7 @@ def print_todos(
                 todo.finished_at.strftime(DATETIME_FORMAT) if todo.finished_at else '-',
                 format_timedelta(todo.elapsed),
                 format_timedelta(todo.duration) if todo.finished_at else '-',
+                format_timedelta(todo.time_since) if todo.finished_at else '-',
                 Text(todo.status.name, style = Style(color = v.STATUS_COLOR_MAP[todo.status])),
                 Text(
                     todo.priority.name,

@@ -361,3 +361,7 @@ class ToDo(RemoteModel):
     @property
     def duration(self) -> datetime.timedelta:
         return (self._finished_at or datetime.datetime.now()) - self._created_at
+
+    @property
+    def time_since(self) -> t.Optional[datetime.timedelta]:
+        return (datetime.datetime.now() - self._finished_at) if self._finished_at else None
