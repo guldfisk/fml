@@ -93,8 +93,7 @@ def todo_throughput(
     ignore_priority: bool,
 ):
     todos = SC.session.query(models.ToDo.finished_at).filter(
-        models.ToDo.canceled == False,
-        models.ToDo.finished_at != None,
+        models.ToDo.state == models.State.COMPLETED,
         models.ToDo.project_id == project.id,
     ).order_by(models.ToDo.finished_at)
 
