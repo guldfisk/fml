@@ -17,7 +17,7 @@ class AlarmWorker(threading.Thread):
     def __init__(
         self,
         alarm_id: int,
-        callback: t.Optional[t.Callable[[AlarmWorker, bool], None]] = None,
+        callback: t.Optional[t.Callable[[AlarmWorker], None]] = None,
     ):
         super().__init__()
         self._alarm_id = alarm_id
@@ -36,12 +36,12 @@ class AlarmWorker(threading.Thread):
 
         session.commit()
 
-        canceled = self._stopped.wait((target_time - datetime.datetime.now()).total_seconds())
+        self._stopped.wait((target_time - datetime.datetime.now()).total_seconds())
 
-        if not canceled:
-            session: Session = ScopedSession()
-            alarm: Alarm = session.query(Alarm).get(self._alarm_id)
+        session: Session = ScopedSession()
+        alarm: Alarm = session.query(Alarm).get(self._alarm_id)
 
+        if not alarm.canceled and not alarm.acknowledged:
             missed_by = (datetime.datetime.now() - alarm.end_at).total_seconds()
 
             success = missed_by < .5
@@ -82,7 +82,7 @@ class AlarmWorker(threading.Thread):
             session.commit()
 
         if self._callback is not None:
-            self._callback(self, canceled)
+            self._callback(self)
 
     def cancel(self):
         self._stopped.set()
@@ -102,7 +102,7 @@ class AlarmManager(object):
             self._alarm_map[alarm_id] = worker
         worker.start()
 
-    def _alarm_completed(self, worker: AlarmWorker, canceled: bool) -> None:
+    def _alarm_completed(self, worker: AlarmWorker) -> None:
         session: Session = ScopedSession()
         alarm: Alarm = session.query(Alarm).get(worker.alarm_id)
         with self._lock:
@@ -110,7 +110,7 @@ class AlarmManager(object):
                 del self._alarm_map[worker.alarm_id]
             except KeyError:
                 pass
-        if not canceled and not alarm.canceled and alarm.requires_acknowledgment and not alarm.acknowledged:
+        if not alarm.canceled and alarm.requires_acknowledgment and not alarm.acknowledged:
             self.handle_alarm(alarm_id = worker.alarm_id)
 
     def check(self) -> None:
@@ -124,15 +124,16 @@ class AlarmManager(object):
         if alarm is None:
             return
 
+        alarm.canceled = True
+        alarm.success = False
+
+        session.commit()
+
         with self._lock:
             alarm_worker = self._alarm_map.get(alarm_id)
         if alarm_worker:
             self._alarm_map[alarm_id].cancel()
             del self._alarm_map[alarm_id]
-        alarm.canceled = True
-        alarm.success = False
-
-        session.commit()
 
         return alarm
 
@@ -146,16 +147,15 @@ class AlarmManager(object):
         ):
             return
 
+        alarm.acknowledged = True
+        session.commit()
+
         with self._lock:
             alarm_worker = self._alarm_map.get(alarm_id)
 
         if alarm_worker:
             self._alarm_map[alarm_id].cancel()
             del self._alarm_map[alarm_id]
-
-        alarm.acknowledged = True
-
-        session.commit()
 
         return alarm
 
@@ -186,16 +186,15 @@ class AlarmManager(object):
             )
         ).all()
         for alarm in alarms:
+            alarm.acknowledged = True
+            session.add(alarm)
+            session.commit()
+
             with self._lock:
                 alarm_worker = self._alarm_map.get(alarm.id)
             if alarm_worker:
                 self._alarm_map[alarm.id].cancel()
                 del self._alarm_map[alarm.id]
-            alarm.acknowledged = True
-
-        session.add_all(alarms)
-
-        session.commit()
 
         return alarms
 
