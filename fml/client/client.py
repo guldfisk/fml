@@ -60,7 +60,10 @@ class ClientJsonError(ClientError):
 
 
 class ClientMultiObjectContext(ClientError):
-    type_view_map = {'todo': (models.ToDo, output.print_todos)}
+    type_view_map = {
+        'todo': (models.ToDo, output.print_todos),
+        'alarm': (models.Alarm, output.print_alarms),
+    }
 
     def __init__(self, message: t.Any) -> None:
         super().__init__()
@@ -152,19 +155,21 @@ class Client(object):
             )
         )
 
-    def cancel_alarm(self, alarm_id: int) -> models.Alarm:
+    def cancel_alarm(self, target: t.Union[str, int]) -> models.Alarm:
         return models.Alarm.from_remote(
             self._make_request(
-                'alarms/cancel/{}/'.format(alarm_id),
+                'alarms/cancel/',
                 'PATCH',
+                {'target': target},
             )
         )
 
-    def acknowledge_alarm(self, alarm_id: int) -> models.Alarm:
+    def acknowledge_alarm(self, target: t.Union[str, int]) -> models.Alarm:
         return models.Alarm.from_remote(
             self._make_request(
-                'alarms/acknowledge/{}/'.format(alarm_id),
+                'alarms/acknowledge/',
                 'PATCH',
+                {'target': target},
             )
         )
 
@@ -698,19 +703,14 @@ def list_alarms(history: bool = False, query: t.Optional[str] = None, limit: int
 @click.argument('target', type = str)
 def cancel_alarms(target: str) -> None:
     """
-    Cancel alarms with id. "all" for cancelling all active alarms.
+    Cancel alarms by id or a unique identifying string. "all" for cancelling all active alarms.
     """
     if target == 'all':
         output.print_alarms(
             Client().cancel_all_alarms()
         )
     else:
-        try:
-            alarm_id = int(target)
-        except ValueError:
-            print('invalid target')
-            return
-        output.print_alarm(Client().cancel_alarm(alarm_id))
+        output.print_alarm(Client().cancel_alarm(target))
 
 
 @alarm_service.command(name = 'ack')
@@ -718,19 +718,14 @@ def cancel_alarms(target: str) -> None:
 def acknowledge_alarms(target: str) -> None:
     """
     Acknowledge alarm requiring acknowledgement. You can only acknowledge commands after their target time.
-    Target is either id of alarm or "all" for all acknowledgeable alarms.
+    Target is either id of alarm, a unique identifying string or "all" for all acknowledgeable alarms.
     """
     if target == 'all':
         output.print_alarms(
             Client().acknowledge_all_alarms()
         )
     else:
-        try:
-            alarm_id = int(target)
-        except ValueError:
-            print('invalid target')
-            return
-        output.print_alarm(Client().acknowledge_alarm(alarm_id))
+        output.print_alarm(Client().acknowledge_alarm(target))
 
 
 @main.group('todo', cls = AliasedGroup)

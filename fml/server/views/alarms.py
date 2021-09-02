@@ -15,7 +15,7 @@ from fml.server import models, schemas
 from fml.server.schemas import AlarmSchema
 from fml.server.session import SessionContainer as SC
 from fml.server.timer import MANAGER
-from fml.server.views.utils import inject_schema
+from fml.server.views.utils import inject_schema, with_errors
 
 
 alarm_views = Blueprint('alarm_views', __name__, url_prefix = '/alarms')
@@ -101,24 +101,22 @@ class AlarmHistory(BaseAlarmList):
 alarm_views.add_url_rule('/history/', methods = ['GET'], view_func = AlarmHistory.as_view('alarm_history'))
 
 
-@alarm_views.route('/cancel/<int:pk>/', methods = ['PATCH'])
-def cancel_alarm(pk: int):
-    alarm = MANAGER.cancel(pk, SC.session)
+@alarm_views.route('/cancel/', methods = ['PATCH'])
+@with_errors
+@inject_schema(schemas.UpdateAlarm(), use_args = False)
+def cancel_alarm(target: models.Alarm):
+    return AlarmSchema().serialize(
+        MANAGER.cancel(target.id, SC.session)
+    )
 
-    if alarm is None:
-        return 'no such alarm', status.HTTP_404_NOT_FOUND
 
-    return AlarmSchema().serialize(alarm)
-
-
-@alarm_views.route('/acknowledge/<int:pk>/', methods = ['PATCH'])
-def acknowledge_alarm(pk: int):
-    alarm = MANAGER.acknowledge(pk, SC.session)
-
-    if alarm is None:
-        return 'no such alarm', status.HTTP_404_NOT_FOUND
-
-    return AlarmSchema().serialize(alarm)
+@alarm_views.route('/acknowledge/', methods = ['PATCH'])
+@with_errors
+@inject_schema(schemas.UpdateAlarm(), use_args = False)
+def acknowledge_alarm(target: models.Alarm):
+    return AlarmSchema().serialize(
+        MANAGER.acknowledge(target.id, SC.session)
+    )
 
 
 @alarm_views.route('/cancel/', methods = ['PATCH'])

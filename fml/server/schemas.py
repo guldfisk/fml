@@ -128,6 +128,14 @@ class AlarmListOptions(Schema):
     query = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
 
 
+class UpdateAlarm(Schema):
+    target = custom_fields.StringIdentifiedOrRaiseField(
+        models.Alarm,
+        AlarmSchema(),
+        base_query_getter = lambda s: models.Alarm.active_alarms(s),
+    )
+
+
 class ToDoSchema(Schema[models.ToDo]):
     id = fields.Integer(read_only = True)
 

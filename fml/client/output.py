@@ -82,7 +82,7 @@ def print_alarm(alarm: models.Alarm) -> None:
     print_alarms((alarm,))
 
 
-def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
+def print_alarms(alarms: t.Sequence[models.Alarm], title: t.Optional[str] = None) -> None:
     _print_striped_table(
         ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'Duration', 'flags', 'status'],
         (
@@ -100,6 +100,7 @@ def print_alarms(alarms: t.Sequence[models.Alarm]) -> None:
             for alarm in
             alarms
         ),
+        title = title,
     )
 
 

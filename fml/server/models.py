@@ -12,6 +12,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session, Query, relationship, backref, synonym
 from sqlalchemy.orm.exc import MultipleResultsFound
 
+from hardcandy.schema import Schema
+
+from fml.server.exceptions import SimpleError, MultipleCandidateError
+
 
 Base = declarative_base()
 
@@ -21,12 +25,110 @@ class ImportanceLevel(_Enum):
     IMPORTANT = 'important'
 
 
-class Alarm(Base):
+class StringIdentified(Base):
+    __abstract__ = True
+    id: Column[Integer]
+    text_identifier: Column[String]
+    sort_keys: t.Optional[t.Tuple[str]] = None
+
+    @classmethod
+    def get_for_no_identifier(
+        cls,
+        session: Session,
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.Optional[StringIdentified]:
+        return None
+
+    @classmethod
+    def get_for_identifier(
+        cls,
+        session: Session,
+        identifier: t.Union[str, int, None],
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.Optional[StringIdentified]:
+        target = target or cls
+        base_query = session.query(target) if base_query is None else base_query
+
+        if not identifier:
+            return cls.get_for_no_identifier(session, target = target, base_query = base_query)
+        if isinstance(identifier, int):
+            return base_query.filter(cls.id == identifier).scalar()
+        try:
+            return base_query.filter(
+                cls.text_identifier.contains(identifier)
+            ).scalar()
+        except MultipleResultsFound:
+            return None
+
+    @classmethod
+    def get_for_identifier_or_raise(
+        cls,
+        session: Session,
+        identifier: t.Union[str, int, None],
+        schema: Schema,
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> StringIdentified:
+        target = target or cls
+        base_query = session.query(target) if base_query is None else base_query
+
+        if not identifier:
+            v = cls.get_for_no_identifier(session, target = target, base_query = base_query)
+            if v is None:
+                raise SimpleError('invalid target')
+            return v
+        candidates = cls.get_list_for_identifier(
+            session = session,
+            identifier = identifier,
+            base_query = base_query,
+        )
+        if not candidates:
+            raise SimpleError('invalid target')
+        if len(candidates) > 1:
+            raise MultipleCandidateError(
+                cls,
+                candidates if cls.sort_keys is None else sorted(
+                    candidates,
+                    key = lambda _c: tuple(getattr(_c, sv) for sv in cls.sort_keys),
+                ),
+                schema,
+            )
+        return candidates[0]
+
+    @classmethod
+    def get_list_for_identifier(
+        cls,
+        session: Session,
+        identifier: t.Union[str, int, None],
+        target = None,
+        base_query: t.Optional[Query] = None,
+    ) -> t.List[StringIdentified]:
+        target = target or cls
+        base_query = session.query(target) if base_query is None else base_query
+
+        if not identifier:
+            return [cls.get_for_no_identifier(session, target = target, base_query = base_query)]
+        if isinstance(identifier, int):
+            return list(base_query.filter(cls.id == identifier))
+
+        return list(
+            base_query.filter(
+                cls.text_identifier.contains(identifier)
+            )
+        )
+
+
+class Alarm(StringIdentified):
     __tablename__ = 'alarm'
+
+    sort_keys = ('end_at',)
 
     id = Column(Integer, primary_key = True)
 
     text = Column(String(127))
+    text_identifier = synonym('text')
 
     started_at = Column(DateTime, default = datetime.datetime.now)
     end_at = Column(DateTime)
@@ -94,65 +196,6 @@ class Tagged(Base):
     )
 
     __table_args__ = (UniqueConstraint('tag_id', 'todo_id'),)
-
-
-class StringIdentified(Base):
-    __abstract__ = True
-    id: Column[Integer]
-    text_identifier: Column[String]
-
-    @classmethod
-    def get_for_no_identifier(
-        cls,
-        session: Session,
-        target = None,
-        base_query: t.Optional[Query] = None,
-    ) -> t.Optional[StringIdentified]:
-        return None
-
-    @classmethod
-    def get_for_identifier(
-        cls,
-        session: Session,
-        identifier: t.Union[str, int, None],
-        target = None,
-        base_query: t.Optional[Query] = None,
-    ) -> t.Optional[StringIdentified]:
-        target = target or cls
-        base_query = session.query(target) if base_query is None else base_query
-
-        if not identifier:
-            return cls.get_for_no_identifier(session, target = target, base_query = base_query)
-        if isinstance(identifier, int):
-            return base_query.filter(cls.id == identifier).scalar()
-        try:
-            return base_query.filter(
-                cls.text_identifier.contains(identifier)
-            ).scalar()
-        except MultipleResultsFound:
-            return None
-
-    @classmethod
-    def get_list_for_identifier(
-        cls,
-        session: Session,
-        identifier: t.Union[str, int, None],
-        target = None,
-        base_query: t.Optional[Query] = None,
-    ) -> t.List[StringIdentified]:
-        target = target or cls
-        base_query = session.query(target) if base_query is None else base_query
-
-        if not identifier:
-            return [cls.get_for_no_identifier(session, target = target, base_query = base_query)]
-        if isinstance(identifier, int):
-            return list(base_query.filter(cls.id == identifier))
-
-        return list(
-            base_query.filter(
-                cls.text_identifier.contains(identifier)
-            )
-        )
 
 
 class Tag(StringIdentified):
