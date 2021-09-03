@@ -593,7 +593,7 @@ def alarm_service() -> None:
 
 
 @alarm_service.command(name = 'new')
-@click.argument('text', type = str)
+@click.argument('text', type = str, required = True, nargs = -1)
 @click.argument('absolute', default = None, type = str, required = False)
 @click.option('--seconds', '-s', default = 0, type = int, help = 'Relative offset seconds.')
 @click.option('--minutes', '-m', default = 0, type = int, help = 'Relative offset minutes.')
@@ -625,7 +625,7 @@ def alarm_service() -> None:
     help = 'Re notify until acknowledged.',
 )
 def new_alarm(
-    text: str,
+    text: t.Sequence[str],
     absolute: t.Optional[str] = None,
     seconds: int = 0,
     minutes: int = 0,
@@ -666,7 +666,7 @@ def new_alarm(
 
     output.print_alarm(
         Client().new_alarm(
-            text,
+            ' '.join(text),
             end_at = target,
             mail = mail,
             silent = silent,
@@ -700,8 +700,8 @@ def list_alarms(history: bool = False, query: t.Optional[str] = None, limit: int
 
 
 @alarm_service.command(name = 'cancel')
-@click.argument('target', type = str)
-def cancel_alarms(target: str) -> None:
+@click.argument('target', type = str, required = True, nargs = -1)
+def cancel_alarms(target: t.Sequence[str]) -> None:
     """
     Cancel alarms by id or a unique identifying string. "all" for cancelling all active alarms.
     """
@@ -710,11 +710,11 @@ def cancel_alarms(target: str) -> None:
             Client().cancel_all_alarms()
         )
     else:
-        output.print_alarm(Client().cancel_alarm(target))
+        output.print_alarm(Client().cancel_alarm(' '.join(target)))
 
 
 @alarm_service.command(name = 'ack')
-@click.argument('target', type = str)
+@click.argument('target', type = str, required = True, nargs = -1)
 def acknowledge_alarms(target: str) -> None:
     """
     Acknowledge alarm requiring acknowledgement. You can only acknowledge commands after their target time.
