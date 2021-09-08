@@ -878,12 +878,17 @@ def finish_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> Non
     '-l',
     default = 25,
     type = int,
-    help = 'Maximum number of top level todos to fetch.',
+    help = 'Maximum number of top level todos to fetch when fetching history.',
     show_default = True,
 )
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 @click.option('--tag', '-t', type = str, help = 'Filter on tag.')
-@click.option('--query', '-q', type = str, help = 'Filter on text.')
+@click.option(
+    '--query',
+    '-q',
+    type = str,
+    help = 'Filter on text. This also disables priority filtering. Specify minimum-priority to override this.',
+)
 @click.option(
     '--all-tasks',
     '-a',
@@ -930,6 +935,8 @@ def list_todos(
     List pending todos.
     """
     kwargs['project'] = get_default_project(kwargs['project'])
+    if kwargs['query'] and kwargs['minimum_priority'] is None:
+        kwargs['ignore_priority'] = True
     no_comments = kwargs.pop('no_comments')
     output.print_todos(
         Client().todo_history(limit = limit, **kwargs)
