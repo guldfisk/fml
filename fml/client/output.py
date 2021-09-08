@@ -32,7 +32,7 @@ def _print_striped_table(
     console.print(table)
 
 
-def print_projects(project: t.Sequence[models.Project]) -> None:
+def print_projects(project: t.Sequence[models.Project], title: t.Optional[str] = None) -> None:
     _print_striped_table(
         ['ID', 'Name', 'Created At', 'Is Default', 'Default Priority Filter'],
         (
@@ -46,6 +46,7 @@ def print_projects(project: t.Sequence[models.Project]) -> None:
             for project in
             project
         ),
+        title = title,
     )
 
 
@@ -53,7 +54,7 @@ def print_project(project: models.Project) -> None:
     print_projects((project,))
 
 
-def print_priorities(priorities: t.Sequence[models.Priority]) -> None:
+def print_priorities(priorities: t.Sequence[models.Priority], title: t.Optional[str] = None) -> None:
     _print_striped_table(
         ['ID', 'Name', 'Project', 'Level', 'Is Default', 'Created At'],
         [
@@ -71,6 +72,23 @@ def print_priorities(priorities: t.Sequence[models.Priority]) -> None:
             for priority in
             priorities
         ],
+        title = title,
+    )
+
+
+def print_tags(tags: t.Sequence[models.Tag], title: t.Optional[str] = None) -> None:
+    _print_striped_table(
+        ['ID', 'Name', 'Created At'],
+        [
+            [
+                str(tag.pk),
+                tag.name,
+                tag.created_at.strftime(DATETIME_FORMAT),
+            ]
+            for tag in
+            tags
+        ],
+        title = title,
     )
 
 

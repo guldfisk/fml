@@ -28,6 +28,7 @@ request: APIRequest
 
 
 @todo_cud_views.route('/todo/', methods = ['POST'])
+@with_errors
 def create_todo():
     schema = ToDoSchema()
 
@@ -37,60 +38,35 @@ def create_todo():
     except DeserializationError as e:
         return e.serialized, status.HTTP_400_BAD_REQUEST
 
-    project = create_data.get('project')
+    project = models.Project.get_for_identifier_or_raise(
+        SC.session,
+        create_data.get('project'),
+        schemas.ProjectSchema(),
+    )
+    todo_data['project_id'] = project.id
 
-    if not project:
-        todo_data['project_id'] = SC.session.query(models.Project.id).filter(models.Project.is_default == True).scalar()
-    else:
-        if isinstance(project, int):
-            _project = SC.session.query(models.Project.id).get(project)
-        else:
-            try:
-                _project = SC.session.query(models.Project.id).filter(
-                    models.Project.name.contains(project)
-                ).scalar()
-            except MultipleResultsFound:
-                return 'ambiguous project "{}"'.format(project), status.HTTP_400_BAD_REQUEST
-
-            if _project is None:
-                return 'unknown project "{}"'.format(project), status.HTTP_400_BAD_REQUEST
-
-            todo_data['project_id'] = _project
-
-    priority_id = models.Priority.get_for_identifier(
+    priority = models.Priority.get_for_identifier_or_raise(
         session = SC.session,
         identifier = create_data.get('priority'),
-        base_query = SC.session.query(models.Priority.id).filter(models.Priority.project_id == todo_data['project_id'])
+        schema = schemas.PrioritySchema(),
+        base_query = SC.session.query(models.Priority).filter(models.Priority.project_id == project.id)
     )
 
-    if priority_id is None:
-        return 'invalid priority', status.HTTP_400_BAD_REQUEST
-
-    todo_data['priority_id'] = priority_id
+    todo_data['priority_id'] = priority.id
 
     todo = models.ToDo(**todo_data)
 
     for tag in create_data['tags']:
-        if isinstance(tag, int):
-            _tag = SC.session.query(models.Tag).get(tag)
-        else:
-            try:
-                _tag = SC.session.query(models.Tag).filter(
-                    models.Tag.name.contains(tag)
-                ).scalar()
-            except MultipleResultsFound:
-                return 'ambiguous tag "{}"'.format(tag), status.HTTP_400_BAD_REQUEST
-
-        if _tag is None:
-            return 'unknown tag "{}"'.format(tag), status.HTTP_400_BAD_REQUEST
-
-        todo.tags.append(_tag)
+        todo.tags.append(
+            models.Tag.get_for_identifier_or_raise(
+                SC.session,
+                tag,
+                schemas.TagSchema(),
+            )
+        )
 
     for parent in create_data['parents']:
-        parent = models.ToDo.get_for_identifier(SC.session, parent, base_query = models.ToDo.active_todos(SC.session))
-        if parent is None:
-            return 'Invalid parent', status.HTTP_400_BAD_REQUEST
-
+        parent = get_todo_for_project_and_identifier(SC.session, parent, project)
         todo.parents.append(parent)
 
     SC.session.add(todo)
@@ -111,6 +87,7 @@ def modify_todo_description(target: t.Union[int, str], project: models.Project, 
 
 
 class ModifyTodo(View):
+    _RECURSIVE: bool = True
 
     def _modify_todo(self, todo: models.ToDo) -> None:
         pass
@@ -122,8 +99,9 @@ class ModifyTodo(View):
 
         self._modify_todo(todo)
 
-        for child in todo.traverse_children(active_only = False):
-            self._modify_todo(child)
+        if self._RECURSIVE:
+            for child in todo.traverse_children(active_only = False):
+                self._modify_todo(child)
 
         SC.session.commit()
 
@@ -141,6 +119,7 @@ todo_cud_views.add_url_rule('/todo/cancel/', methods = ['PATCH'], view_func = Ca
 
 
 class ToggleWaitingTodo(ModifyTodo):
+    _RECURSIVE: bool = False
 
     def _modify_todo(self, todo: models.ToDo) -> None:
         todo.state = models.State.WAITING if todo.state == models.State.PENDING else models.State.PENDING

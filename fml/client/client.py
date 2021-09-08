@@ -63,6 +63,9 @@ class ClientMultiObjectContext(ClientError):
     type_view_map = {
         'todo': (models.ToDo, output.print_todos),
         'alarm': (models.Alarm, output.print_alarms),
+        'priority': (models.Priority, output.print_priorities),
+        'tag': (models.Tag, output.print_tags),
+        'project': (models.Project, output.print_projects),
     }
 
     def __init__(self, message: t.Any) -> None:
@@ -428,9 +431,9 @@ class Client(object):
             )['points']
         ]
 
-    def list_tags(self) -> t.Sequence[str]:
+    def list_tags(self) -> t.Sequence[models.Tag]:
         return [
-            tag['name']
+            models.Tag.from_remote(tag)
             for tag in
             self._make_request('tag/')['tags']
         ]
@@ -1057,8 +1060,7 @@ def list_tags() -> None:
     """
     List tags.
     """
-    for tag in Client().list_tags():
-        print(tag)
+    output.print_tags(Client().list_tags())
 
 
 @tag_service.command(name = 'new')

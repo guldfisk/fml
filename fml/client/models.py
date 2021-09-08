@@ -260,6 +260,35 @@ class Priority(RemoteModel):
         )
 
 
+class Tag(RemoteModel):
+
+    def __init__(
+        self,
+        pk: int,
+        name: str,
+        created_at: datetime.datetime,
+    ):
+        super().__init__(pk)
+        self._name = name
+        self._created_at = created_at
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def created_at(self) -> datetime.datetime:
+        return self._created_at
+
+    @classmethod
+    def from_remote(cls, remote: Serialized) -> Tag:
+        return cls(
+            pk = remote['id'],
+            name = remote['name'],
+            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
+        )
+
+
 class ToDo(RemoteModel):
 
     def __init__(
