@@ -770,10 +770,10 @@ def new_todo(
     """
     Create new todo.
     """
-    if len(text) == 2 and not force:
+    if len(text) > 1 and not force:
         from fml.client.dtmath.parse import DTMParser
         try:
-            DTMParser().parse(text[1])
+            DTMParser().parse(text[-1])
         except (DTMParseException, ValueError, TypeError):
             pass
         else:
