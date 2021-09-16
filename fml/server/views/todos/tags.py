@@ -9,8 +9,10 @@ from flask_api.request import APIRequest
 from hardcandy.schema import DeserializationError
 
 from fml.server import models
-from fml.server.schemas import TagSchema, TaggedSchema
+from fml.server import schemas
+from fml.server.retrieve import get_todo_for_project_and_identifier
 from fml.server.session import SessionContainer as SC
+from fml.server.views.utils import with_errors, inject_schema
 
 
 todo_tag_views = Blueprint('todo_tag_views', __name__)
@@ -19,7 +21,7 @@ request: APIRequest
 
 @todo_tag_views.route('/tag/', methods = ['POST'])
 def create_tag():
-    schema = TagSchema()
+    schema = schemas.TagSchema()
 
     try:
         tag = schema.deserialize(request.data)
@@ -38,37 +40,20 @@ def create_tag():
 
 
 @todo_tag_views.route('/todo/tag/', methods = ['POST'])
-def tag_todo():
-    schema = TaggedSchema()
-
-    try:
-        tagged = schema.deserialize_raw(request.data)
-    except DeserializationError as e:
-        return e.serialized, status.HTTP_400_BAD_REQUEST
-
-    todo: t.Optional[models.ToDo] = models.ToDo.get_for_identifier(
+@with_errors
+@inject_schema(schemas.TaggedSchema(), use_args = False)
+def tag_todo(todo_target: t.Union[str, int], tag_target: models.Tag, project: models.Project, recursive: bool):
+    todo = get_todo_for_project_and_identifier(
         SC.session,
-        tagged['todo_id'],
-        base_query = models.ToDo.active_todos(SC.session),
+        todo_target,
+        project,
     )
 
-    if todo is None:
-        return 'Invalid todo', status.HTTP_400_BAD_REQUEST
+    todo.tags.append(tag_target)
 
-    tag: t.Optional[models.Tag] = models.Tag.get_for_identifier(
-        SC.session,
-        tagged['tag_id'],
-        target = models.Tag,
-    )
-
-    if tag is None:
-        return 'Invalid tag', status.HTTP_400_BAD_REQUEST
-
-    todo.tags.append(tag)
-
-    if tagged['recursive']:
+    if recursive:
         for child in todo.traverse_children():
-            child.tags.append(tag)
+            child.tags.append(tag_target)
 
     try:
         SC.session.commit()
@@ -76,14 +61,14 @@ def tag_todo():
         SC.session.rollback()
         return 'Invalid args', status.HTTP_400_BAD_REQUEST
 
-    return {'status': 'ok'}, status.HTTP_201_CREATED
+    return schemas.ToDoSchema().serialize(todo), status.HTTP_201_CREATED
 
 
 @todo_tag_views.route('/tag/', methods = ['GET'])
 def tag_list():
     tags: t.List[models.Tag] = SC.session.query(models.Tag).order_by(models.Tag.created_at.desc())
 
-    schema = TagSchema()
+    schema = schemas.TagSchema()
 
     return {
         'tags': [

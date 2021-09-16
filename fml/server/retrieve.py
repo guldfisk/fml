@@ -1,3 +1,4 @@
+import datetime
 import typing as t
 
 from sqlalchemy.orm import Session
@@ -11,6 +12,16 @@ def get_todo_for_project_and_identifier(
     identifier: t.Union[str, int],
     project: models.Project,
 ) -> models.ToDo:
+    if identifier == 'l':
+        todo = session.query(models.ToDo).filter(
+            models.ToDo.project == project,
+        ).order_by(models.ToDo.created_at.desc()).first()
+        if todo is None:
+            raise SimpleError('invalid todo')
+        if todo.created_at < datetime.datetime.now() - datetime.timedelta(hours = 1):
+            raise SimpleError('todo too old for selecting as last')
+        return todo
+
     todos = models.ToDo.get_list_for_identifier(
         session = session,
         identifier = identifier,

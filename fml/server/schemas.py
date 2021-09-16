@@ -37,8 +37,9 @@ class ProjectSchema(Schema[models.Project]):
 
 
 class TaggedSchema(Schema[models.Tagged]):
-    todo_id = fields.CoalesceField([fields.Integer(), fields.Text()])
-    tag_id = fields.CoalesceField([fields.Integer(), fields.Text()])
+    todo_target = fields.CoalesceField([fields.Integer(), fields.Text()])
+    tag_target = custom_fields.StringIdentifiedField(models.Tag)
+    project = custom_fields.StringIdentifiedField(models.Project, default = None)
     recursive = fields.Bool(default = False, write_only = True)
 
 

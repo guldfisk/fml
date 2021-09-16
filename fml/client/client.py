@@ -48,6 +48,17 @@ class SimpleClientError(ClientError):
         return self._message
 
 
+class ErrorMessage(ClientError):
+
+    def __init__(self, message: t.Any) -> None:
+        super().__init__()
+        self._message = message
+
+    @property
+    def message(self) -> str:
+        return self._message['message']
+
+
 class ClientJsonError(ClientError):
 
     def __init__(self, message: t.Any) -> None:
@@ -90,7 +101,10 @@ class ClientMultiObjectContext(ClientError):
             )
 
 
-EXCEPTION_TYPE_MAP = {'multiple_candidate_error': ClientMultiObjectContext}
+EXCEPTION_TYPE_MAP = {
+    'multiple_candidate_error': ClientMultiObjectContext,
+    'error_message': ErrorMessage,
+}
 
 
 class Client(object):
@@ -451,16 +465,20 @@ class Client(object):
         self,
         todo: t.Union[int, str],
         tag: t.Union[int, str],
+        project: t.Union[int, str, None],
         recursive: bool = False,
-    ) -> None:
-        self._make_request(
-            'todo/tag/',
-            method = 'POST',
-            data = {
-                'todo_id': todo,
-                'tag_id': tag,
-                'recursive': recursive,
-            }
+    ) -> models.ToDo:
+        return models.ToDo.from_remote(
+            self._make_request(
+                'todo/tag/',
+                method = 'POST',
+                data = {
+                    'todo_target': todo,
+                    'tag_target': tag,
+                    'project': project,
+                    'recursive': recursive,
+                }
+            )
         )
 
     def comment_todo(
@@ -838,7 +856,7 @@ def comment_todo(
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 def cancel_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> None:
     """
-    Cancel todo. Target is either id or partial text of todo.
+    Cancel todo. Target is either id, partial text of todo or "l" for last todo.
     """
     output.print_todo(Client().cancel_todo(' '.join(target), get_default_project(project)))
 
@@ -848,7 +866,7 @@ def cancel_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> Non
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 def toggle_todo_wait(target: t.Sequence[str], project: t.Optional[str] = None) -> None:
     """
-    Toggle todo waiting status. Target is either id or partial text of todo.
+    Toggle todo waiting status. Target is either id, partial text of todo or "l" for last todo.
     """
     output.print_todo(Client().toggle_todo_waiting(' '.join(target), get_default_project(project)))
 
@@ -858,7 +876,7 @@ def toggle_todo_wait(target: t.Sequence[str], project: t.Optional[str] = None) -
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
 def finish_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> None:
     """
-    Finish todo. Target is either id or partial text of todo.
+    Finish todo. Target is either id, partial text of todo or "l" for last todo.
     """
     output.print_todo(Client().finish_todo(' '.join(target), get_default_project(project)))
 
@@ -1085,6 +1103,7 @@ def create_tag(
 @tag_service.command(name = 'add')
 @click.argument('todo', type = str, required = True)
 @click.argument('tag', type = str, required = True)
+@click.option('--project', '-p', type = str, help = 'Project.')
 @click.option(
     '--recursive',
     '-r',
@@ -1097,13 +1116,20 @@ def create_tag(
 def tag_todo(
     todo: str,
     tag: str,
+    project: t.Optional[str],
     recursive: bool = False,
 ) -> None:
     """
-    Tag todo.
+    Tag todo. Target is either id, partial text of todo or "l" for last todo.
     """
-    Client().tag_todo(todo, tag, recursive)
-    print('ok')
+    output.print_todo(
+        Client().tag_todo(
+            todo = todo,
+            tag = tag,
+            project = get_default_project(project),
+            recursive = recursive,
+        )
+    )
 
 
 @todo_service.command(name = 'dep')
