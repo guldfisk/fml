@@ -215,7 +215,7 @@ class Client(object):
         return [
             models.Alarm.from_remote(alarm)
             for alarm in
-            self._make_request('alarms/acknowledge/', 'PATCH')['alarms']
+            self._make_request('alarms/acknowledge/all/', 'PATCH')['alarms']
         ]
 
     def create_project(
@@ -726,12 +726,13 @@ def cancel_alarms(target: t.Sequence[str]) -> None:
     """
     Cancel alarms by id or a unique identifying string. "all" for cancelling all active alarms.
     """
+    target = ' '.join(target)
     if target == 'all':
         output.print_alarms(
             Client().cancel_all_alarms()
         )
     else:
-        output.print_alarm(Client().cancel_alarm(' '.join(target)))
+        output.print_alarm(Client().cancel_alarm(target))
 
 
 @alarm_service.command(name = 'ack')
@@ -741,6 +742,7 @@ def acknowledge_alarms(target: str) -> None:
     Acknowledge alarm requiring acknowledgement. You can only acknowledge commands after their target time.
     Target is either id of alarm, a unique identifying string or "all" for all acknowledgeable alarms.
     """
+    target = ' '.join(target)
     if target == 'all':
         output.print_alarms(
             Client().acknowledge_all_alarms()

@@ -132,7 +132,7 @@ def cancel_alarms():
     }
 
 
-@alarm_views.route('/acknowledge/', methods = ['PATCH'])
+@alarm_views.route('/acknowledge/all/', methods = ['PATCH'])
 def acknowledge_alarms():
     schema = AlarmSchema()
 
