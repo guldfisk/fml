@@ -170,7 +170,7 @@ class ModifyToDoSchema(Schema):
 
 
 class StatsOptionsSchema(Schema):
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
     tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
     top_level_only = fields.Bool(default = True)
     ignore_priority = fields.Bool(default = False)
