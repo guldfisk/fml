@@ -7,6 +7,8 @@ from flask_api.request import APIRequest
 
 from sqlalchemy import exists
 
+import pandas as pd
+
 from fml.server import models, schemas
 from fml.server.session import SessionContainer as SC
 from fml.server.views.utils import DATETIME_FORMAT, inject_schema
@@ -139,16 +141,18 @@ def todo_throughput(
     for finished_date in finished_dates:
         finished_dates_map[(finished_date - finished_dates[0]).days] += 1
 
-    points = []
+    series = pd.Series([0] + finished_dates_map)
 
-    for idx in range(len(finished_dates_map)):
-        _slice = finished_dates_map[max(0, idx - 5):idx + 1]
-        points.append(
-            (
-                (finished_dates[0] + datetime.timedelta(days = idx)).strftime(DATETIME_FORMAT),
-                sum(_slice) / len(_slice),
-            )
+    smooth_points = list(series.ewm(halflife = 16).mean())[1:]
+
+    points = [
+        (
+            (finished_dates[0] + datetime.timedelta(days = idx)).strftime(DATETIME_FORMAT),
+            smooth_points[idx],
         )
+        for idx in
+        range(len(finished_dates_map))
+    ]
 
     return {
         'points': points,

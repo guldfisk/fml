@@ -5,7 +5,6 @@ from abc import abstractmethod
 
 from sqlalchemy import exists
 from sqlalchemy.orm import joinedload, Query
-from sqlalchemy.orm.exc import MultipleResultsFound
 
 from flask import request, Blueprint
 from flask.views import View
@@ -17,6 +16,7 @@ from hardcandy.schema import DeserializationError, Field
 
 from fml.server import models
 from fml.server import schemas
+from fml.server.exceptions import SimpleError
 from fml.server.retrieve import get_todo_for_project_and_identifier
 from fml.server.schemas import ToDoSchema
 from fml.server.session import SessionContainer as SC
@@ -165,10 +165,11 @@ class BaseToDoList(View):
     def order_todos(self, query: Query) -> Query:
         return query.order_by(models.ToDo.created_at.desc())
 
+    @with_errors
     @inject_schema(schemas.ToDoListOptions())
     def dispatch_request(
         self,
-        project: models.Project,
+        project: t.Union[str, int, None],
         tag: t.Optional[models.Tag],
         query: t.Optional[str],
         all_tasks: bool,
@@ -177,21 +178,33 @@ class BaseToDoList(View):
         minimum_priority: t.Union[int, str, None],
         ignore_priority: bool,
     ):
+        project = None if project == 'all' else models.Project.get_for_identifier(SC.session, project)
+
         todos = self.order_todos(
-            self.get_base_query().filter(
-                models.ToDo.project_id == project.id,
-            ).options(joinedload('tags'), joinedload('children'), joinedload('comments'))
+            self.get_base_query().options(joinedload('tags'), joinedload('children'), joinedload('comments'))
         ).join(models.Priority)
+
+        if project is not None:
+            todos = todos.filter(models.ToDo.project_id == project.id)
 
         if not ignore_priority:
             level = None
 
-            if minimum_priority is not None:
-                level = models.Priority.level_from_identifier(SC.session, minimum_priority, project)
-                if level is None:
-                    return 'invalid priority', status.HTTP_400_BAD_REQUEST
-            elif project.default_priority_filter is not None:
-                level = project.default_priority_filter
+            if project is None:
+                if minimum_priority is not None:
+                    try:
+                        level = int(minimum_priority)
+                    except ValueError:
+                        raise SimpleError(
+                            'When filtering on priority levels for multiple projects, level just be specified as an int'
+                        )
+            else:
+                if minimum_priority is not None:
+                    level = models.Priority.level_from_identifier(SC.session, minimum_priority, project)
+                    if level is None:
+                        return 'invalid priority', status.HTTP_400_BAD_REQUEST
+                elif project.default_priority_filter is not None:
+                    level = project.default_priority_filter
 
             if level is not None:
                 todos = todos.filter(models.Priority.level <= level)

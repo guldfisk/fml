@@ -114,7 +114,7 @@ class UpdateDependencySchema(Schema):
 
 
 class ToDoListOptions(Schema):
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
     tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
     query = fields.Text(default = '')
     all_tasks = fields.Bool(default = False)
