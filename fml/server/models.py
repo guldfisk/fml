@@ -244,24 +244,6 @@ class Priority(StringIdentified):
     __table_args__ = (UniqueConstraint('project_id', 'level'), UniqueConstraint('project_id', 'name'),)
 
     @classmethod
-    def level_from_identifier(
-        cls,
-        session: Session,
-        identifier: t.Union[int, str],
-        project: Project,
-    ) -> t.Optional[int]:
-        if isinstance(identifier, int):
-            return identifier
-        else:
-            try:
-                return session.query(cls.level).filter(
-                    cls.text_identifier.contains(identifier),
-                    cls.project_id == project.id,
-                ).scalar()
-            except MultipleResultsFound:
-                return None
-
-    @classmethod
     def get_for_no_identifier(
         cls,
         session: Session,

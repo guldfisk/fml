@@ -12,6 +12,7 @@ from hardcandy.schema import DeserializationError, Schema
 from fml.server import models
 from fml.server import schemas
 from fml.server.fields import StringIdentifiedField
+from fml.server.retrieve import get_priority_level
 from fml.server.session import SessionContainer as SC
 from fml.server.views.utils import inject_schema
 
@@ -59,9 +60,7 @@ def create_project():
 )
 def modify_project(project: models.Project, default_priority_filter: t.Union[int, str, None]):
     if default_priority_filter is not None:
-        default_priority_filter = models.Priority.level_from_identifier(SC.session, default_priority_filter, project)
-        if default_priority_filter is None:
-            return 'invalid priority', status.HTTP_400_BAD_REQUEST
+        default_priority_filter = get_priority_level(SC.session, default_priority_filter, project)
     project.default_priority_filter = default_priority_filter
     SC.session.commit()
     return schemas.ProjectSchema().serialize(project)

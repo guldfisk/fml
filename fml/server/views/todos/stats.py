@@ -2,7 +2,6 @@ import datetime
 import typing as t
 
 from flask import Blueprint
-from flask_api import status
 from flask_api.request import APIRequest
 
 from sqlalchemy import exists
@@ -10,9 +9,9 @@ from sqlalchemy import exists
 import pandas as pd
 
 from fml.server import models, schemas
-from fml.server.exceptions import SimpleError
+from fml.server.retrieve import get_project_and_minimum_priority
 from fml.server.session import SessionContainer as SC
-from fml.server.views.utils import DATETIME_FORMAT, inject_schema
+from fml.server.views.utils import DATETIME_FORMAT, inject_schema, with_errors
 
 
 todo_stat_views = Blueprint('todo_stat_views', __name__)
@@ -20,28 +19,24 @@ request: APIRequest
 
 
 @todo_stat_views.route('/todo/burn-down/', methods = ['GET'])
+@with_errors
 @inject_schema(schemas.StatsOptionsSchema())
 def todo_burn_down(
-    project: models.Project,
+    project: t.Union[int, str, None],
     tag: t.Optional[models.Tag],
     top_level_only: bool,
     minimum_priority: t.Union[int, str, None],
     ignore_priority: bool,
 ):
-    todos = SC.session.query(models.ToDo).filter(models.ToDo.project_id == project.id)
+    project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
 
-    if not ignore_priority:
-        level = None
+    todos = SC.session.query(models.ToDo)
 
-        if minimum_priority is not None:
-            level = models.Priority.level_from_identifier(SC.session, minimum_priority, project)
-            if level is None:
-                return 'invalid priority', status.HTTP_400_BAD_REQUEST
-        elif project.default_priority_filter is not None:
-            level = project.default_priority_filter
+    if project is not None:
+        todos = todos.filter(models.ToDo.project_id == project.id)
 
-        if level is not None:
-            todos = todos.join(models.Priority).filter(models.Priority.level <= level)
+    if level is not None:
+        todos = todos.join(models.Priority).filter(models.Priority.level <= level)
 
     if tag is not None:
         todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag.id)
@@ -87,6 +82,7 @@ def todo_burn_down(
 
 
 @todo_stat_views.route('/todo/throughput/', methods = ['GET'])
+@with_errors
 @inject_schema(schemas.StatsOptionsSchema())
 def todo_throughput(
     project: t.Union[int, str, None],
@@ -95,36 +91,17 @@ def todo_throughput(
     minimum_priority: t.Union[int, str, None],
     ignore_priority: bool,
 ):
-    project = None if project == 'all' else models.Project.get_for_identifier(SC.session, project)
+    project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
 
     todos = SC.session.query(models.ToDo.finished_at).filter(
         models.ToDo.state == models.State.COMPLETED,
     ).order_by(models.ToDo.finished_at)
 
     if project is not None:
-        todos = todos.filter(models.ToDo.project_id == project.id,)
+        todos = todos.filter(models.ToDo.project_id == project.id, )
 
-    if not ignore_priority:
-        level = None
-
-        if project is None:
-            if minimum_priority is not None:
-                try:
-                    level = int(minimum_priority)
-                except ValueError:
-                    raise SimpleError(
-                        'When filtering on priority levels for multiple projects, level just be specified as an int'
-                    )
-        else:
-            if minimum_priority is not None:
-                level = models.Priority.level_from_identifier(SC.session, minimum_priority, project)
-                if level is None:
-                    return 'invalid priority', status.HTTP_400_BAD_REQUEST
-            elif project.default_priority_filter is not None:
-                level = project.default_priority_filter
-
-        if level is not None:
-            todos = todos.join(models.Priority).filter(models.Priority.level <= level)
+    if level is not None:
+        todos = todos.join(models.Priority).filter(models.Priority.level <= level)
 
     if tag is not None:
         todos = todos.join(models.Tagged).filter(models.Tagged.tag_id == tag.id)
