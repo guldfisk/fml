@@ -62,7 +62,15 @@ def get_project_and_minimum_priority(
     minimum_priority: t.Union[str, int, None],
     ignore_priority: bool = False,
 ) -> t.Tuple[t.Optional[models.Project], t.Optional[int]]:
-    project = None if project == 'all' else models.Project.get_for_identifier(session, project)
+    project = (
+        None
+        if project == 'all' else
+        models.Project.get_for_identifier_or_raise(
+            session,
+            project,
+            schemas.ProjectSchema(),
+        )
+    )
     level = None
 
     if not ignore_priority:

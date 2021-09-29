@@ -14,6 +14,7 @@ class AlarmSchema(Schema[models.Alarm]):
 
     started_at = fields.Datetime(read_only = True)
     end_at = fields.Datetime()
+    next_reminder_time_target = fields.Datetime(required = False, read_only = True)
 
     requires_acknowledgment = fields.Bool(required = False)
     retry_delay = fields.Integer(required = False, min = 5)
@@ -122,6 +123,21 @@ class ToDoListOptions(Schema):
     limit = fields.Integer(default = 25)
     ignore_priority = fields.Bool(default = False)
     minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
+    state = fields.Enum(models.State, soft_match = True, required = False, default = None)
+    order_by = fields.List(
+        fields.MultiChoiceField(
+            {
+                'created_at',
+                'finished_at',
+                'state',
+                'priority',
+                'project',
+            },
+            soft_match = True,
+        ),
+        required = False,
+        default = None,
+    )
 
 
 class AlarmListOptions(Schema):
@@ -135,6 +151,10 @@ class UpdateAlarm(Schema):
         AlarmSchema(),
         base_query_getter = lambda s: models.Alarm.active_alarms(s),
     )
+
+
+class SnoozeAlarm(UpdateAlarm):
+    new_target_time = fields.Datetime()
 
 
 class ToDoSchema(Schema[models.ToDo]):

@@ -155,6 +155,19 @@ def finish_todo(target: t.Sequence[str], project: t.Optional[str] = None) -> Non
     help = 'Filter on text. This also disables priority filtering. Specify minimum-priority to override this.',
 )
 @click.option(
+    '--state',
+    '-s',
+    type = str,
+    help = 'Filter on state.',
+)
+@click.option(
+    '--order-by',
+    '-o',
+    type = str,
+    help = 'Order by fields.',
+    multiple = True,
+)
+@click.option(
     '--all-tasks',
     '-a',
     default = False,

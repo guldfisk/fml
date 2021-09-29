@@ -140,6 +140,12 @@ class Client(object):
                 )
         return response.json()
 
+    def ding(self) -> t.Any:
+        return self._make_request(
+            '/alarms/ding/',
+            'POST',
+        )
+
     def new_alarm(
         self,
         text: str,
@@ -179,6 +185,18 @@ class Client(object):
                 'alarms/acknowledge/',
                 'PATCH',
                 {'target': target},
+            )
+        )
+
+    def snooze_alarm(self, target: t.Union[str, int], new_target_time: datetime.datetime) -> models.Alarm:
+        return models.Alarm.from_remote(
+            self._make_request(
+                'alarms/snooze/',
+                'PATCH',
+                {
+                    'target': target,
+                    'new_target_time': new_target_time.strftime('%d/%m/%Y %H:%M:%S'),
+                },
             )
         )
 
@@ -346,19 +364,25 @@ class Client(object):
         flat: bool = False,
         minimum_priority: t.Union[str, int, None] = None,
         ignore_priority: bool = False,
+        state: t.Optional[str] = None,
+        order_by: t.Optional[t.Sequence[str]] = None,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
             for todo in
             self._make_request(
                 'todo/',
-                project = project,
-                tag = tag,
-                query = query,
-                all_tasks = all_tasks,
-                flat = flat,
-                minimum_priority = minimum_priority,
-                ignore_priority = ignore_priority,
+                data = {
+                    'project': project,
+                    'tag': tag,
+                    'query': query,
+                    'all_tasks': all_tasks,
+                    'flat': flat,
+                    'minimum_priority': minimum_priority,
+                    'ignore_priority': ignore_priority,
+                    'state': state,
+                    'order_by': order_by,
+                },
             )['todos']
         ]
 
@@ -372,20 +396,26 @@ class Client(object):
         flat: bool = False,
         minimum_priority: t.Union[str, int, None] = None,
         ignore_priority: bool = False,
+        state: t.Optional[str] = None,
+        order_by: t.Optional[t.Sequence[str]] = None,
     ) -> t.Sequence[models.ToDo]:
         return [
             models.ToDo.from_remote(todo)
             for todo in
             self._make_request(
                 'todo/history/',
-                limit = limit,
-                project = project,
-                tag = tag,
-                query = query,
-                all_tasks = all_tasks,
-                flat = flat,
-                minimum_priority = minimum_priority,
-                ignore_priority = ignore_priority,
+                data = {
+                    'limit': limit,
+                    'project': project,
+                    'tag': tag,
+                    'query': query,
+                    'all_tasks': all_tasks,
+                    'flat': flat,
+                    'minimum_priority': minimum_priority,
+                    'ignore_priority': ignore_priority,
+                    'state': state,
+                    'order_by': order_by,
+                }
             )['todos']
         ]
 

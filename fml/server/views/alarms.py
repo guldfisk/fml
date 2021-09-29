@@ -16,6 +16,7 @@ from fml.server.schemas import AlarmSchema
 from fml.server.session import SessionContainer as SC
 from fml.server.timer import MANAGER
 from fml.server.views.utils import inject_schema, with_errors
+from fml.sound import ding_sync
 
 
 alarm_views = Blueprint('alarm_views', __name__, url_prefix = '/alarms')
@@ -41,6 +42,12 @@ def create_alarm():
     MANAGER.handle_alarm(alarm.id)
 
     return schema.serialize(alarm)
+
+
+@alarm_views.route('/ding/', methods = ['POST'])
+def ding():
+    ding_sync()
+    return {'status': 'ok'}
 
 
 class BaseAlarmList(View):
@@ -116,6 +123,15 @@ def cancel_alarm(target: models.Alarm):
 def acknowledge_alarm(target: models.Alarm):
     return AlarmSchema().serialize(
         MANAGER.acknowledge(target.id, SC.session)
+    )
+
+
+@alarm_views.route('/snooze/', methods = ['PATCH'])
+@with_errors
+@inject_schema(schemas.SnoozeAlarm(), use_args = False)
+def snooze_alarm(target: models.Alarm, new_target_time: datetime.datetime):
+    return AlarmSchema().serialize(
+        MANAGER.snooze(target.id, SC.session, new_target_time)
     )
 
 

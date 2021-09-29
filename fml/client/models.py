@@ -44,6 +44,7 @@ class Alarm(RemoteModel):
         text: str,
         started_at: datetime.datetime,
         end_at: datetime.datetime,
+        next_reminder_time_target: t.Optional[datetime.datetime],
         requires_acknowledgment: bool,
         send_email: bool,
         silent: bool,
@@ -57,6 +58,7 @@ class Alarm(RemoteModel):
         self._text = text
         self._started_at = started_at
         self._end_at = end_at
+        self._next_reminder_time_target = next_reminder_time_target
         self._requires_acknowledgment = requires_acknowledgment
         self._send_email = send_email
         self._silent = silent
@@ -73,6 +75,11 @@ class Alarm(RemoteModel):
             text = remote['text'],
             started_at = datetime.datetime.strptime(remote['started_at'], DATETIME_FORMAT),
             end_at = datetime.datetime.strptime(remote['end_at'], DATETIME_FORMAT),
+            next_reminder_time_target = (
+                datetime.datetime.strptime(remote['next_reminder_time_target'], DATETIME_FORMAT)
+                if remote['next_reminder_time_target'] else
+                None
+            ),
             requires_acknowledgment = remote['requires_acknowledgment'],
             send_email = remote['send_email'],
             silent = remote['silent'],
@@ -94,6 +101,10 @@ class Alarm(RemoteModel):
     @property
     def end_at(self) -> datetime.datetime:
         return self._end_at
+
+    @property
+    def next_reminder_time_target(self) -> t.Optional[datetime.datetime]:
+        return self._next_reminder_time_target
 
     @property
     def requires_acknowledgment(self) -> bool:
@@ -152,10 +163,14 @@ class Alarm(RemoteModel):
         return 'PENDING'
 
     @property
+    def next_target_time(self) -> datetime.datetime:
+        return self._next_reminder_time_target or self._end_at
+
+    @property
     def eta(self) -> str:
-        eta = self._end_at - datetime.datetime.now()
+        eta = self.next_target_time - datetime.datetime.now()
         if eta.total_seconds() > 0:
-            return format_timedelta(eta)
+            return format_timedelta(eta) + (' (reminder)' if self._next_reminder_time_target else '')
         return '-'
 
     @property

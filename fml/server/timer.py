@@ -17,7 +17,7 @@ class AlarmWorker(threading.Thread):
     def __init__(
         self,
         alarm_id: int,
-        callback: t.Optional[t.Callable[[AlarmWorker], None]] = None,
+        callback: t.Optional[t.Callable[[AlarmWorker, bool], None]] = None,
     ):
         super().__init__()
         self._alarm_id = alarm_id
@@ -36,53 +36,54 @@ class AlarmWorker(threading.Thread):
 
         session.commit()
 
-        self._stopped.wait((target_time - datetime.datetime.now()).total_seconds())
+        canceled = self._stopped.wait((target_time - datetime.datetime.now()).total_seconds())
 
-        session: Session = ScopedSession()
-        alarm: Alarm = session.query(Alarm).get(self._alarm_id)
+        if not canceled:
+            session: Session = ScopedSession()
+            alarm: Alarm = session.query(Alarm).get(self._alarm_id)
 
-        if not alarm.canceled and not alarm.acknowledged:
-            missed_by = (datetime.datetime.now() - alarm.end_at).total_seconds()
+            if not alarm.canceled and not alarm.acknowledged:
+                missed_by = (datetime.datetime.now() - alarm.end_at).total_seconds()
 
-            success = missed_by < .5
+                success = missed_by < .5
 
-            body = '{notification_text} {time_text}'.format(
-                notification_text = (
-                    'Re-notified (number {})'.format(alarm.times_notified)
-                    if alarm.times_notified else
-                    'Notified'
-                ),
-                time_text = (
-                    'on time'
-                    if success else
-                    'late by {} seconds'.format(round(missed_by, 1))
-                )
-            )
-
-            notify.notify(alarm.text, description = body)
-            if not alarm.silent:
-                sound.play_sound()
-            if alarm.send_email:
-                notify.send_mail(alarm.text, body)
-
-            session.query(Alarm).filter(Alarm.id == alarm.id).update(
-                {
-                    'times_notified': (Alarm.times_notified + 1),
-                    'next_reminder_time_target': datetime.datetime.now() + datetime.timedelta(
-                        seconds = alarm.retry_delay
+                body = '{notification_text} {time_text}'.format(
+                    notification_text = (
+                        'Re-notified (number {})'.format(alarm.times_notified)
+                        if alarm.times_notified else
+                        'Notified'
                     ),
-                    **(
-                        {'success': success}
-                        if alarm.times_notified <= 0 else
-                        {}
+                    time_text = (
+                        'on time'
+                        if success else
+                        'late by {} seconds'.format(round(missed_by, 1))
                     )
-                }
-            )
+                )
 
-            session.commit()
+                notify.notify(alarm.text, description = body)
+                if not alarm.silent:
+                    sound.ding_sync()
+                if alarm.send_email:
+                    notify.send_mail(alarm.text, body)
+
+                session.query(Alarm).filter(Alarm.id == alarm.id).update(
+                    {
+                        'times_notified': (Alarm.times_notified + 1),
+                        'next_reminder_time_target': datetime.datetime.now() + datetime.timedelta(
+                            seconds = alarm.retry_delay
+                        ),
+                        **(
+                            {'success': success}
+                            if alarm.times_notified <= 0 else
+                            {}
+                        )
+                    }
+                )
+
+                session.commit()
 
         if self._callback is not None:
-            self._callback(self)
+            self._callback(self, canceled)
 
     def cancel(self):
         self._stopped.set()
@@ -102,7 +103,7 @@ class AlarmManager(object):
             self._alarm_map[alarm_id] = worker
         worker.start()
 
-    def _alarm_completed(self, worker: AlarmWorker) -> None:
+    def _alarm_completed(self, worker: AlarmWorker, canceled: bool) -> None:
         session: Session = ScopedSession()
         alarm: Alarm = session.query(Alarm).get(worker.alarm_id)
         with self._lock:
@@ -110,7 +111,7 @@ class AlarmManager(object):
                 del self._alarm_map[worker.alarm_id]
             except KeyError:
                 pass
-        if not alarm.canceled and alarm.requires_acknowledgment and not alarm.acknowledged:
+        if not canceled and not alarm.canceled and alarm.requires_acknowledgment and not alarm.acknowledged:
             self.handle_alarm(alarm_id = worker.alarm_id)
 
     def check(self) -> None:
@@ -121,19 +122,15 @@ class AlarmManager(object):
     def cancel(self, alarm_id: int, session: Session) -> t.Optional[Alarm]:
         alarm = Alarm.active_alarms(session).filter(Alarm.id == alarm_id).scalar()
 
-        if alarm is None:
-            return
-
-        alarm.canceled = True
-        alarm.success = False
-
-        session.commit()
+        if alarm is not None:
+            alarm.canceled = True
+            alarm.success = False
+            session.commit()
 
         with self._lock:
             alarm_worker = self._alarm_map.get(alarm_id)
         if alarm_worker:
-            self._alarm_map[alarm_id].cancel()
-            del self._alarm_map[alarm_id]
+            alarm_worker.cancel()
 
         return alarm
 
@@ -152,10 +149,30 @@ class AlarmManager(object):
 
         with self._lock:
             alarm_worker = self._alarm_map.get(alarm_id)
-
         if alarm_worker:
-            self._alarm_map[alarm_id].cancel()
-            del self._alarm_map[alarm_id]
+            alarm_worker.cancel()
+
+        return alarm
+
+    def snooze(self, alarm_id, session: Session, new_target_time: datetime.datetime) -> t.Optional[Alarm]:
+        alarm: Alarm = session.query(Alarm).get(alarm_id)
+
+        if alarm is None or not (
+            alarm.requires_acknowledgment
+            and alarm.times_notified
+            and alarm.end_at <= datetime.datetime.now()
+        ):
+            return
+
+        with self._lock:
+            alarm_worker = self._alarm_map.get(alarm.id)
+        if alarm_worker:
+            self._alarm_map[alarm.id].cancel()
+            alarm_worker.join(3)
+
+        alarm.next_reminder_time_target = new_target_time
+        session.commit()
+        self.handle_alarm(alarm_id)
 
         return alarm
 
@@ -165,13 +182,11 @@ class AlarmManager(object):
             with self._lock:
                 alarm_worker = self._alarm_map.get(alarm.id)
             if alarm_worker:
-                self._alarm_map[alarm.id].cancel()
-                del self._alarm_map[alarm.id]
+                alarm_worker.cancel()
             alarm.canceled = True
             alarm.success = False
 
         session.add_all(alarms)
-
         session.commit()
 
         return alarms
@@ -193,8 +208,7 @@ class AlarmManager(object):
             with self._lock:
                 alarm_worker = self._alarm_map.get(alarm.id)
             if alarm_worker:
-                self._alarm_map[alarm.id].cancel()
-                del self._alarm_map[alarm.id]
+                alarm_worker.cancel()
 
         return alarms
 

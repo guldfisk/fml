@@ -4,6 +4,7 @@ import typing as t
 import click
 
 from fml import sound
+from fml.client.client import Client
 
 
 class AliasedGroup(click.Group):
@@ -49,11 +50,23 @@ def main() -> None:
 
 
 @main.command(name = 'ding')
-def ding() -> None:
+@click.option(
+    '--blocking',
+    '-b',
+    default = False,
+    type = bool,
+    is_flag = True,
+    show_default = True,
+    help = 'Block while playing sound.'
+)
+def ding(blocking: bool) -> None:
     """
     Play alarm sound.
     """
-    sound.play_sound()
+    if blocking:
+        sound.ding()
+    else:
+        Client().ding()
 
 
 def get_default_project(project: t.Optional[str] = None) -> t.Optional[str]:

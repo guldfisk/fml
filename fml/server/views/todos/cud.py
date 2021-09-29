@@ -149,6 +149,13 @@ def get_todo(target: t.Union[int, str], project: models.Project):
 
 
 class BaseToDoList(View):
+    _order_by_map = {
+        'created_at': models.ToDo.created_at.desc(),
+        'finished_at': models.ToDo.finished_at.desc(),
+        'state': models.ToDo.state,
+        'priority': models.Priority.level,
+        'project': models.Project.created_at,
+    }
 
     @abstractmethod
     def get_base_query(self) -> Query:
@@ -165,7 +172,7 @@ class BaseToDoList(View):
         return query.order_by(models.ToDo.created_at.desc())
 
     @with_errors
-    @inject_schema(schemas.ToDoListOptions())
+    @inject_schema(schemas.ToDoListOptions(), use_args = False)
     def dispatch_request(
         self,
         project: t.Union[str, int, None],
@@ -176,18 +183,30 @@ class BaseToDoList(View):
         limit: int,
         minimum_priority: t.Union[int, str, None],
         ignore_priority: bool,
+        state: t.Optional[models.State],
+        order_by: t.Optional[t.List[str]],
     ):
         project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
 
-        todos = self.order_todos(
-            self.get_base_query().options(joinedload('tags'), joinedload('children'), joinedload('comments'))
+        todos = self.get_base_query().options(
+            joinedload('tags'),
+            joinedload('children'),
+            joinedload('comments'),
         ).join(models.Priority)
+
+        if order_by:
+            todos = todos.order_by(*(self._order_by_map[s] for s in order_by))
+        else:
+            todos = self.order_todos(todos)
 
         if project is not None:
             todos = todos.filter(models.ToDo.project_id == project.id)
 
         if level is not None:
             todos = todos.filter(models.Priority.level <= level)
+
+        if state is not None:
+            todos = todos.filter(models.ToDo.state == state)
 
         if not all_tasks:
             todos = todos.filter(

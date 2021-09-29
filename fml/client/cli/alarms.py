@@ -150,7 +150,7 @@ def cancel_alarms(target: t.Sequence[str], force: bool) -> None:
 @split_text_option()
 def acknowledge_alarms(target: str) -> None:
     """
-    Acknowledge alarm requiring acknowledgement. You can only acknowledge commands after their target time.
+    Acknowledge alarm requiring acknowledgement. You can only acknowledge alarms after their target time.
     Target is either id of alarm, a unique identifying string or "all" for all acknowledgeable alarms.
     """
     target = ' '.join(target)
@@ -160,3 +160,32 @@ def acknowledge_alarms(target: str) -> None:
         )
     else:
         output.print_alarm(Client().acknowledge_alarm(target))
+
+
+@alarm_service.command(name = 'snooze')
+@split_text_option()
+@click.argument('new_target_time', default = None, type = str)
+def snooze_alarm(target: str, new_target_time: str) -> None:
+    """
+    Snooze alarm requiring acknowledgement. You can only snooze alarms after their target time.
+    Target is either id of alarm or a uniquely identifying string.
+    """
+    from fml.client.dtmath.parse import DTMParser
+
+    try:
+        new_target_time = DTMParser().parse(new_target_time)
+    except (DTMParseException, ValueError) as e:
+        print(e)
+        return
+    except TypeError:
+        print('can\'t add dates')
+        return
+
+    if isinstance(new_target_time, datetime.timedelta):
+        new_target_time += datetime.datetime.now()
+
+    if new_target_time < datetime.datetime.now():
+        print('alarm must be scheduled for future')
+        return
+
+    output.print_alarm(Client().snooze_alarm(' '.join(target), new_target_time))
