@@ -9,8 +9,10 @@ from flask_api.request import APIRequest
 
 from sqlalchemy.orm import Query
 
-from hardcandy.schema import DeserializationError
+from hardcandy.schema import DeserializationError, Schema
+from hardcandy import fields
 
+from fml.notify import notify as _notify
 from fml.server import models, schemas
 from fml.server.schemas import AlarmSchema
 from fml.server.session import SessionContainer as SC
@@ -47,6 +49,26 @@ def create_alarm():
 @alarm_views.route('/ding/', methods = ['POST'])
 def ding():
     ding_sync()
+    return {'status': 'ok'}
+
+
+@alarm_views.route('/notify/', methods = ['POST'])
+@with_errors
+@inject_schema(
+    Schema(
+        fields = {
+            'title': fields.Text(max = 61),
+            'description': fields.Text(
+                max = 127,
+                required = False,
+                default = '',
+            ),
+        }
+    ),
+    use_args = False,
+)
+def notify(title: str, description: str):
+    _notify(title, description)
     return {'status': 'ok'}
 
 
