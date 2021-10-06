@@ -255,13 +255,22 @@ def list_todos(
     help = 'Don\'t filter on priority',
 )
 @click.option('--minimum-priority', '-m', default = None, type = str, help = 'Minimum priority.')
+@click.option(
+    '--last-n-days',
+    '-n',
+    default = 128,
+    type = int,
+    help = 'Data from at most n previous days.',
+    show_default=True,
+)
 def todos_burn_down(
-    chart: bool = False,
-    project: t.Optional[str] = None,
-    tag: t.Optional[str] = None,
-    all_tasks: bool = False,
-    ignore_priority: bool = False,
-    minimum_priority: t.Optional[str] = None,
+    chart: bool,
+    project: t.Optional[str],
+    tag: t.Optional[str],
+    all_tasks: bool,
+    ignore_priority: bool,
+    minimum_priority: t.Optional[str],
+    last_n_days: int,
 ) -> None:
     """
     Show todo burndown chart.
@@ -273,6 +282,7 @@ def todos_burn_down(
             all_tasks = all_tasks,
             ignore_priority = ignore_priority,
             minimum_priority = minimum_priority,
+            last_n_days = last_n_days,
         ),
         chart,
     )
@@ -309,13 +319,22 @@ def todos_burn_down(
     help = 'Don\'t filter on priority',
 )
 @click.option('--minimum-priority', '-m', default = None, type = str, help = 'Minimum priority.')
+@click.option(
+    '--last-n-days',
+    '-n',
+    default = 128,
+    type = int,
+    help = 'Data from at most n previous days.',
+    show_default=True,
+)
 def todos_throughput(
-    chart: bool = False,
-    project: t.Optional[str] = None,
-    tag: t.Optional[str] = None,
-    all_tasks: bool = False,
-    ignore_priority: bool = False,
-    minimum_priority: t.Optional[str] = None,
+    chart: bool,
+    project: t.Optional[str],
+    tag: t.Optional[str],
+    all_tasks: bool,
+    ignore_priority: bool,
+    minimum_priority: t.Optional[str],
+    last_n_days: int,
 ) -> None:
     """
     Show todo throughput chart.
@@ -327,6 +346,7 @@ def todos_throughput(
             all_tasks = all_tasks,
             ignore_priority = ignore_priority,
             minimum_priority = minimum_priority,
+            last_n_days = last_n_days,
         ),
         chart,
     )

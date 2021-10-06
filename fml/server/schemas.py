@@ -195,3 +195,4 @@ class StatsOptionsSchema(Schema):
     top_level_only = fields.Bool(default = True)
     ignore_priority = fields.Bool(default = False)
     minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
+    last_n_days = fields.Integer(default = 128)

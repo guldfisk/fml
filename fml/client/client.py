@@ -426,6 +426,7 @@ class Client(object):
         all_tasks: bool = False,
         ignore_priority: bool = False,
         minimum_priority: t.Optional[str] = None,
+        last_n_days: int = 128,
     ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
@@ -440,6 +441,7 @@ class Client(object):
                 top_level_only = not all_tasks,
                 ignore_priority = ignore_priority,
                 minimum_priority = minimum_priority,
+                last_n_days = last_n_days,
             )['points']
         ]
 
@@ -450,6 +452,7 @@ class Client(object):
         all_tasks: bool = False,
         ignore_priority: bool = False,
         minimum_priority: t.Optional[str] = None,
+        last_n_days: int = 128,
     ) -> t.Sequence[t.Tuple[datetime.datetime, int]]:
         return [
             (
@@ -464,6 +467,7 @@ class Client(object):
                 top_level_only = not all_tasks,
                 ignore_priority = ignore_priority,
                 minimum_priority = minimum_priority,
+                last_n_days = last_n_days,
             )['points']
         ]
 

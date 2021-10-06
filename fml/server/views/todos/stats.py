@@ -27,6 +27,7 @@ def todo_burn_down(
     top_level_only: bool,
     minimum_priority: t.Union[int, str, None],
     ignore_priority: bool,
+    last_n_days: int,
 ):
     project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
 
@@ -77,7 +78,7 @@ def todo_burn_down(
         )
 
     return {
-        'points': points,
+        'points': points[-last_n_days],
     }
 
 
@@ -90,6 +91,7 @@ def todo_throughput(
     top_level_only: bool,
     minimum_priority: t.Union[int, str, None],
     ignore_priority: bool,
+    last_n_days: int,
 ):
     project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
 
@@ -142,7 +144,7 @@ def todo_throughput(
             smooth_points[idx],
         )
         for idx in
-        range(len(finished_dates_map))
+        range(max(0, len(finished_dates_map) - last_n_days), len(finished_dates_map))
     ]
 
     return {
