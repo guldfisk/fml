@@ -177,24 +177,27 @@ def print_todos(
     )
 
 
-def show_points(points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]], chart: bool = False) -> None:
-    import numpy as np
-    import gnuplotlib as gp
-
+def show_points(
+    points: t.Sequence[t.Tuple[datetime.datetime, t.Union[int, float]]],
+    title: str,
+    y_label: str,
+) -> None:
     if not points:
         print('No data')
         return
 
-    args = {
-        'unset': 'grid',
-        'set': ('xdata time', 'format x "%d/%m/%y"'),
-    }
+    import plotext as plt
 
-    if not chart:
-        args['terminal'] = 'dumb 160 40'
+    dates, values = zip(*points)
+    date_time_stamps = [d.timestamp() for d in dates]
 
-    gp.plot(
-        np.asarray([date.timestamp() for date, _ in points]),
-        np.asarray([active for _, active in points]),
-        **args,
-    )
+    plt.plot(date_time_stamps, values)
+    plt.xticks(date_time_stamps, (d.strftime('%Y/%m/%d') for d in dates))
+    plt.title(title)
+    plt.xlabel('Date')
+    plt.ylabel(y_label)
+    plt.canvas_color('cloud')
+    plt.axes_color('iron')
+    plt.grid(False, True)
+
+    plt.show()

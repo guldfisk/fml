@@ -78,7 +78,7 @@ def todo_burn_down(
         )
 
     return {
-        'points': points[-last_n_days],
+        'points': points[-last_n_days:],
     }
 
 

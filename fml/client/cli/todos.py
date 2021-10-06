@@ -225,15 +225,6 @@ def list_todos(
 
 
 @todo_service.command(name = 'burndown')
-@click.option(
-    '--chart',
-    '-c',
-    default = False,
-    type = bool,
-    is_flag = True,
-    show_default = True,
-    help = 'Output to window instead of terminal',
-)
 @click.option('--project', '-p', type = str, help = 'Project.')
 @click.option('--tag', '-t', type = str, help = 'Filter on tag.')
 @click.option(
@@ -261,10 +252,9 @@ def list_todos(
     default = 128,
     type = int,
     help = 'Data from at most n previous days.',
-    show_default=True,
+    show_default = True,
 )
 def todos_burn_down(
-    chart: bool,
     project: t.Optional[str],
     tag: t.Optional[str],
     all_tasks: bool,
@@ -284,20 +274,12 @@ def todos_burn_down(
             minimum_priority = minimum_priority,
             last_n_days = last_n_days,
         ),
-        chart,
+        title = 'ToDo Burndown',
+        y_label = 'ToDo Qty.',
     )
 
 
 @todo_service.command(name = 'throughput')
-@click.option(
-    '--chart',
-    '-c',
-    default = False,
-    type = bool,
-    is_flag = True,
-    show_default = True,
-    help = 'Output to window instead of terminal',
-)
 @click.option('--project', '-p', type = str, help = 'Project.')
 @click.option('--tag', '-t', type = str, help = 'Filter on Tag.')
 @click.option(
@@ -325,10 +307,9 @@ def todos_burn_down(
     default = 128,
     type = int,
     help = 'Data from at most n previous days.',
-    show_default=True,
+    show_default = True,
 )
 def todos_throughput(
-    chart: bool,
     project: t.Optional[str],
     tag: t.Optional[str],
     all_tasks: bool,
@@ -348,7 +329,8 @@ def todos_throughput(
             minimum_priority = minimum_priority,
             last_n_days = last_n_days,
         ),
-        chart,
+        title = 'ToDo Throughput',
+        y_label = 'ToDo/Day',
     )
 
 
