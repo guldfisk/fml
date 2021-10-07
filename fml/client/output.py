@@ -1,13 +1,16 @@
 import datetime
 import typing as t
+from abc import abstractmethod
 
+from rich import print
 from rich.console import Console, RenderableType
-from rich.table import Table
 from rich.style import Style
+from rich.table import Table
 from rich.text import Text
 
 from fml.client import models
 from fml.client import values as v
+from fml.client.cli.context import Context, OutputMode
 from fml.client.utils import format_timedelta
 from fml.client.values import ALARM_DATETIME_FORMAT, DATETIME_FORMAT
 
@@ -30,6 +33,47 @@ def _print_striped_table(
 
     console = Console()
     console.print(table)
+
+
+T = t.TypeVar('T')
+
+
+class _MultiItemPrinter(t.Generic[T]):
+    title: str
+    headers: t.Sequence[str]
+
+    @classmethod
+    @abstractmethod
+    def format_item(cls, item: T, **kwargs) -> t.Sequence[t.Any]:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_item_header(cls, item: T, **kwargs) -> str:
+        pass
+
+    def __call__(self, items: t.Union[T, t.Sequence[T]], **kwargs) -> None:
+        if not isinstance(items, t.Sequence):
+            items = [items]
+        if Context.output_mode == OutputMode.TABLE:
+            _print_striped_table(
+                self.headers,
+                [self.format_item(item, **kwargs) for item in items],
+                title = kwargs.get('title', self.title),
+            )
+        elif Context.output_mode == OutputMode.LIST:
+            title = kwargs.get('title', self.title)
+            if title:
+                print(title)
+            for item in items:
+                print(self.get_item_header(item, **kwargs))
+                for key, value in zip(self.headers, self.format_item(item, **kwargs)):
+                    print(
+                        Text('\t')
+                        + Text(key, style = Style(color = v.C_LIGHT_GREY))
+                        + Text(': ')
+                        + value
+                    )
 
 
 def print_projects(project: t.Sequence[models.Project], title: t.Optional[str] = None) -> None:
@@ -96,85 +140,112 @@ def print_priority(priority: models.Priority) -> None:
     print_priorities((priority,))
 
 
-def print_alarm(alarm: models.Alarm) -> None:
-    print_alarms((alarm,))
+class AlarmPrinter(_MultiItemPrinter[models.Alarm]):
+    title = None
+    headers = ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'Duration', 'flags', 'status']
+
+    @classmethod
+    def format_item(cls, item: models.Alarm, **kwargs) -> t.Sequence[t.Any]:
+        return [
+            str(item.pk),
+            item.text,
+            item.started_at.strftime(ALARM_DATETIME_FORMAT),
+            item.end_at.strftime(ALARM_DATETIME_FORMAT),
+            item.eta,
+            format_timedelta(item.elapsed),
+            format_timedelta(item.duration),
+            ' '.join(item.flags),
+            Text(item.status, style = Style(color = v.ALARM_STATUS_COLOR_MAP[item.status])),
+        ]
+
+    @classmethod
+    def get_item_header(cls, item: models.Alarm, **kwargs) -> str:
+        return str(item.pk)
 
 
-def print_alarms(alarms: t.Sequence[models.Alarm], title: t.Optional[str] = None) -> None:
-    _print_striped_table(
-        ['ID', 'Text', 'Start', 'End', 'ETA', 'Elapsed', 'Duration', 'flags', 'status'],
-        (
-            [
-                str(alarm.pk),
-                alarm.text,
-                alarm.started_at.strftime(ALARM_DATETIME_FORMAT),
-                alarm.end_at.strftime(ALARM_DATETIME_FORMAT),
-                alarm.eta,
-                format_timedelta(alarm.elapsed),
-                format_timedelta(alarm.duration),
-                ' '.join(alarm.flags),
-                Text(alarm.status, style = Style(color = v.ALARM_STATUS_COLOR_MAP[alarm.status])),
-            ]
-            for alarm in
-            alarms
-        ),
-        title = title,
-    )
+print_alarms = print_alarm = AlarmPrinter()
 
 
-def print_todo(todo: models.ToDo, *, show_comments: bool = True) -> None:
-    print_todos((todo,), show_comments = show_comments)
+class TodoPrinter(_MultiItemPrinter[models.ToDo]):
+    title = None
+    headers = [
+        'ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'Since', 'State', 'Priority', 'Tags',
+        'Project',
+    ]
+
+    @classmethod
+    def _iterate_todos(cls, todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterator[t.Tuple[models.ToDo, int]]:
+        for todo in todos:
+            yield todo, indent
+            yield from cls._iterate_todos(todo.children, indent + 1)
+
+    @classmethod
+    def format_item(cls, item: models.ToDo, **kwargs) -> t.Sequence[t.Any]:
+        return [
+            str(item.pk),
+            Text('-|' * kwargs['indent']) + Text(
+                item.text,
+                style = Style(color = v.C_NEUTRAL if item.status == v.State.WAITING else v.C_WHITE),
+            ) + Text(
+                ''.join(
+                    '\n' + kwargs.get('ident_string', '-|') * (
+                        kwargs['indent'] + kwargs.get('comment_indent', 0)) + ' - ' + comment
+                    for comment in
+                    item.comments
+                ) if kwargs.get('show_comments', True) else
+                ''
+            ),
+            item.created_at.strftime(DATETIME_FORMAT),
+            item.finished_at.strftime(DATETIME_FORMAT) if item.finished_at else '-',
+            format_timedelta(item.elapsed),
+            format_timedelta(item.duration) if item.finished_at else '-',
+            format_timedelta(item.time_since) if item.finished_at else '-',
+            Text(item.status.name, style = Style(color = v.STATUS_COLOR_MAP[item.status])),
+            Text(
+                item.priority.name,
+                style = Style(color = v.PRIORITY_COLOR_MAP.get(item.priority.level, v.C_NEUTRAL)),
+            ),
+            ', '.join(item.tags),
+            item.project,
+        ]
+
+    @classmethod
+    def get_item_header(cls, item: models.ToDo, **kwargs) -> str:
+        return str(item.pk)
+
+    def __call__(self, items: t.Union[models.ToDo, t.Sequence[models.ToDo]], **kwargs) -> None:
+        if not isinstance(items, t.Sequence):
+            items = [items]
+        if Context.output_mode == OutputMode.TABLE:
+            _print_striped_table(
+                self.headers,
+                [self.format_item(item, indent = indent, **kwargs) for item, indent in self._iterate_todos(items)],
+                title = kwargs.get('title', self.title),
+            )
+        elif Context.output_mode == OutputMode.LIST:
+            title = kwargs.get('title', self.title)
+            if title:
+                print(title)
+            for item, indent in self._iterate_todos(items):
+                print((indent * '----') + '> ' + self.get_item_header(item, **kwargs))
+                for key, value in zip(
+                    self.headers,
+                    self.format_item(
+                        item,
+                        indent = 0,
+                        comment_indent = indent + 1,
+                        ident_string = '\t', **kwargs,
+                    )
+                ):
+                    print(
+                        Text((indent + 1) * '\t')
+                        + Text(key, style = Style(color = v.C_LIGHT_GREY))
+                        + Text(': ')
+                        + value
+                    )
 
 
-def _iterate_todos(todos: t.Sequence[models.ToDo], indent: int = 0) -> t.Iterator[t.Tuple[models.ToDo, int]]:
-    for todo in todos:
-        yield todo, indent
-        yield from _iterate_todos(todo.children, indent + 1)
-
-
-def print_todos(
-    todos: t.Sequence[models.ToDo],
-    *,
-    show_comments: bool = True,
-    title: t.Optional[str] = None,
-) -> None:
-    _print_striped_table(
-        [
-            'ID', 'Text', 'Created At', 'Finished At', 'Elapsed', 'Duration', 'Since', 'State', 'Priority', 'Tags',
-            'Project',
-        ],
-        (
-            [
-                str(todo.pk),
-                Text('-|' * indent) + Text(
-                    todo.text,
-                    style = Style(color = v.C_NEUTRAL if todo.status == v.State.WAITING else v.C_WHITE),
-                ) + Text(
-                    ''.join(
-                        '\n' + '-|' * indent + ' - ' + comment
-                        for comment in
-                        todo.comments
-                    ) if show_comments else
-                    ''
-                ),
-                todo.created_at.strftime(DATETIME_FORMAT),
-                todo.finished_at.strftime(DATETIME_FORMAT) if todo.finished_at else '-',
-                format_timedelta(todo.elapsed),
-                format_timedelta(todo.duration) if todo.finished_at else '-',
-                format_timedelta(todo.time_since) if todo.finished_at else '-',
-                Text(todo.status.name, style = Style(color = v.STATUS_COLOR_MAP[todo.status])),
-                Text(
-                    todo.priority.name,
-                    style = Style(color = v.PRIORITY_COLOR_MAP.get(todo.priority.level, v.C_NEUTRAL)),
-                ),
-                ', '.join(todo.tags),
-                todo.project,
-            ]
-            for (todo, indent) in
-            _iterate_todos(todos)
-        ),
-        title = title,
-    )
+print_todos = print_todo = TodoPrinter()
 
 
 def show_points(

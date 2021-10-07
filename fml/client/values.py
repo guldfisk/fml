@@ -14,6 +14,7 @@ C_IMPORTANT = '#f9f57a'
 C_SUCCESS = '#5fef66'
 C_NEUTRAL = '#bfdcf5'
 C_WHITE = '#ffffff'
+C_LIGHT_GREY = '#A0A0A0'
 
 
 class State(Enum):

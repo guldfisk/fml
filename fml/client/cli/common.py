@@ -4,6 +4,7 @@ import typing as t
 import click
 
 from fml import sound
+from fml.client.cli.context import OutputMode, Context
 from fml.client.client import Client
 
 
@@ -42,11 +43,22 @@ def split_text_option(text: str = 'target'):
 
 
 @click.group(cls = AliasedGroup)
-def main() -> None:
+@click.option('--output-mode', type = str, help = 'Formatting target for output.', default = 'table')
+def main(output_mode: str) -> None:
     """
     Keep track of stuff and such.
     """
-    pass
+    if output_mode != 'table':
+        options = [
+            mode
+            for mode in
+            OutputMode
+            if output_mode in mode.value
+        ]
+        if not len(options) == 1:
+            print('invalid output mode {}'.format(output_mode))
+        else:
+            Context.output_mode = options[0]
 
 
 @main.command(name = 'ding')
