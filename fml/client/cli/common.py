@@ -3,7 +3,6 @@ import typing as t
 
 import click
 
-from fml import sound
 from fml.client.cli.context import OutputMode, Context
 from fml.client.client import Client
 
@@ -76,6 +75,7 @@ def ding(blocking: bool) -> None:
     Play alarm sound.
     """
     if blocking:
+        from fml import sound
         sound.ding()
     else:
         Client().ding()
