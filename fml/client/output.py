@@ -1,4 +1,6 @@
+import dataclasses
 import datetime
+import json
 import typing as t
 from abc import abstractmethod
 
@@ -38,6 +40,12 @@ def _print_striped_table(
 T = t.TypeVar('T')
 
 
+def json_serialize(obj: t.Any) -> str:
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+    raise TypeError(f'Type {type(obj)} not serializable')
+
+
 class _MultiItemPrinter(t.Generic[T]):
     title: str
     headers: t.Sequence[str]
@@ -53,7 +61,7 @@ class _MultiItemPrinter(t.Generic[T]):
         pass
 
     def __call__(self, items: t.Union[T, t.Sequence[T]], **kwargs) -> None:
-        if not isinstance(items, t.Sequence):
+        if not isinstance(items, t.Sequence) and Context.output_mode in (OutputMode.TABLE, OutputMode.LIST):
             items = [items]
         if Context.output_mode == OutputMode.TABLE:
             _print_striped_table(
@@ -74,6 +82,15 @@ class _MultiItemPrinter(t.Generic[T]):
                         + Text(': ')
                         + value
                     )
+        elif Context.output_mode == OutputMode.JSON:
+            print(
+                json.dumps(
+                    [dataclasses.asdict(item) for item in items]
+                    if isinstance(items, t.Sequence) else
+                    dataclasses.asdict(items),
+                    default = json_serialize,
+                )
+            )
 
 
 def print_projects(project: t.Sequence[models.Project], title: t.Optional[str] = None) -> None:
@@ -267,8 +284,8 @@ def show_points(
     plt.title(title)
     plt.xlabel('Date')
     plt.ylabel(y_label)
-    plt.canvas_color('cloud')
-    plt.axes_color('iron')
+    plt.canvas_color('iron')
+    plt.axes_color('cloud')
     plt.grid(False, True)
 
     plt.show()

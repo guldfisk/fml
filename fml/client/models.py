@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import typing as t
 
@@ -13,13 +14,7 @@ Serialized = t.Mapping[str, t.Any]
 
 
 class RemoteModel(ABC):
-
-    def __init__(self, pk: t.Union[str, int]):
-        self._pk = pk
-
-    @property
-    def pk(self) -> t.Union[str, int]:
-        return self._pk
+    pk: t.Union[str, int]
 
     @classmethod
     @abstractmethod
@@ -27,46 +22,30 @@ class RemoteModel(ABC):
         pass
 
     def __hash__(self) -> int:
-        return hash((self.__class__, self._pk))
+        return hash((self.__class__, self.pk))
 
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, self.__class__)
-            and self._pk == other._pk
+            and self.pk == other.pk
         )
 
 
+@dataclasses.dataclass
 class Alarm(RemoteModel):
-
-    def __init__(
-        self,
-        pk: int,
-        text: str,
-        started_at: datetime.datetime,
-        end_at: datetime.datetime,
-        next_reminder_time_target: t.Optional[datetime.datetime],
-        requires_acknowledgment: bool,
-        send_email: bool,
-        silent: bool,
-        level: str,
-        times_notified: int,
-        acknowledged: bool,
-        canceled: bool,
-        success: bool,
-    ):
-        super().__init__(pk)
-        self._text = text
-        self._started_at = started_at
-        self._end_at = end_at
-        self._next_reminder_time_target = next_reminder_time_target
-        self._requires_acknowledgment = requires_acknowledgment
-        self._send_email = send_email
-        self._silent = silent
-        self._level = level
-        self._times_notified = times_notified
-        self._acknowledged = acknowledged
-        self._canceled = canceled
-        self._success = success
+    pk: int
+    text: str
+    started_at: datetime.datetime
+    end_at: datetime.datetime
+    next_reminder_time_target: t.Optional[datetime.datetime]
+    requires_acknowledgment: bool
+    send_email: bool
+    silent: bool
+    level: str
+    times_notified: int
+    acknowledged: bool
+    canceled: bool
+    success: bool
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> Alarm:
@@ -91,95 +70,47 @@ class Alarm(RemoteModel):
         )
 
     @property
-    def text(self) -> str:
-        return self._text
-
-    @property
-    def started_at(self) -> datetime.datetime:
-        return self._started_at
-
-    @property
-    def end_at(self) -> datetime.datetime:
-        return self._end_at
-
-    @property
-    def next_reminder_time_target(self) -> t.Optional[datetime.datetime]:
-        return self._next_reminder_time_target
-
-    @property
-    def requires_acknowledgment(self) -> bool:
-        return self._requires_acknowledgment
-
-    @property
-    def send_email(self) -> bool:
-        return self._send_email
-
-    @property
-    def silent(self) -> bool:
-        return self._silent
-
-    @property
-    def level(self) -> str:
-        return self._level
-
-    @property
-    def times_notified(self) -> int:
-        return self._times_notified
-
-    @property
-    def acknowledged(self) -> bool:
-        return self._acknowledged
-
-    @property
-    def canceled(self) -> bool:
-        return self._canceled
-
-    @property
-    def success(self) -> bool:
-        return self._success
-
-    @property
     def flags(self) -> t.Iterator[str]:
-        if self._silent:
+        if self.silent:
             yield 'silent'
-        if self._send_email:
+        if self.send_email:
             yield 'mail'
-        if self._requires_acknowledgment:
+        if self.requires_acknowledgment:
             yield 'ack'
 
     @property
     def status(self) -> str:
-        if self._canceled:
+        if self.canceled:
             return 'CANCELED'
-        if self._requires_acknowledgment and not self._acknowledged and self._times_notified:
+        if self.requires_acknowledgment and not self.acknowledged and self.times_notified:
             return 'AWAITING_ACKNOWLEDGEMENT'
         if (
-            self._requires_acknowledgment and self._acknowledged
-            or not self._requires_acknowledgment and self._times_notified
+            self.requires_acknowledgment and self.acknowledged
+            or not self.requires_acknowledgment and self.times_notified
         ):
-            if self._success:
+            if self.success:
                 return 'COMPLETED'
             return 'COMPLETED_LATE'
         return 'PENDING'
 
     @property
     def next_target_time(self) -> datetime.datetime:
-        return self._next_reminder_time_target or self._end_at
+        return self.next_reminder_time_target or self.end_at
 
     @property
     def eta(self) -> str:
         eta = self.next_target_time - datetime.datetime.now()
         if eta.total_seconds() > 0:
-            return format_timedelta(eta) + (' (reminder)' if self._next_reminder_time_target else '')
+            return format_timedelta(eta) + (' (reminder)' if self.next_reminder_time_target else '')
         return '-'
 
     @property
     def elapsed(self) -> datetime.timedelta:
-        return max(datetime.datetime.now() - self._started_at, datetime.timedelta(seconds = 0))
+        return max(datetime.datetime.now() - self.started_at, datetime.timedelta(seconds = 0))
 
     @property
     def duration(self) -> datetime.timedelta:
-        return self._end_at - self._started_at
+        return self.end_at - self.started_at
 
 
 class Project(RemoteModel):
@@ -192,11 +123,15 @@ class Project(RemoteModel):
         is_default: bool = True,
         default_priority_filter: t.Optional[int] = None,
     ):
-        super().__init__(pk)
+        self._pk = pk
         self._name = name
         self._created_at = created_at
         self._is_default = is_default
         self._default_priority_filter = default_priority_filter
+
+    @property
+    def pk(self) -> int:
+        return self._pk
 
     @property
     def name(self) -> str:
@@ -236,12 +171,16 @@ class Priority(RemoteModel):
         is_default: bool,
         created_at: datetime.datetime,
     ):
-        super().__init__(pk)
+        self._pk = pk
         self._name = name
         self._project = project
         self._level = level
         self._is_default = is_default
         self._created_at = created_at
+
+    @property
+    def pk(self) -> int:
+        return self._pk
 
     @property
     def name(self) -> str:
@@ -283,9 +222,13 @@ class Tag(RemoteModel):
         name: str,
         created_at: datetime.datetime,
     ):
-        super().__init__(pk)
+        self._pk = pk
         self._name = name
         self._created_at = created_at
+
+    @property
+    def pk(self) -> int:
+        return self._pk
 
     @property
     def name(self) -> str:
@@ -320,7 +263,7 @@ class ToDo(RemoteModel):
         children: t.Optional[t.Sequence[ToDo]] = None,
         parents: t.Optional[t.Sequence[ToDo]] = None,
     ):
-        super().__init__(pk)
+        self._pk = pk
         self._text = text
         self._created_at = created_at
         self._finished_at = finished_at
@@ -331,6 +274,10 @@ class ToDo(RemoteModel):
         self._children = children
         self._parents = parents
         self._priority = priority
+
+    @property
+    def pk(self) -> int:
+        return self._pk
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> ToDo:
