@@ -142,7 +142,7 @@ class Client(object):
 
     def ding(self) -> t.Any:
         return self._make_request(
-            '/alarms/ding/',
+            'alarms/ding/',
             'POST',
         )
 
