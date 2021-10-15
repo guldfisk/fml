@@ -356,3 +356,32 @@ class ToDo(RemoteModel):
     @property
     def time_since(self) -> t.Optional[datetime.timedelta]:
         return (datetime.datetime.now() - self._finished_at) if self._finished_at else None
+
+
+@dataclasses.dataclass
+class CIChecker(RemoteModel):
+    run_id: t.Union[str, int]
+    started: datetime.datetime
+    timeout: datetime.datetime
+    link: str
+    canceled: bool
+
+    @property
+    def pk(self) -> t.Union[str, int]:
+        return self.run_id
+
+    @property
+    def status(self) -> str:
+        if self.canceled:
+            return 'CANCELED'
+        return 'PENDING'
+
+    @classmethod
+    def from_remote(cls, remote: Serialized) -> CIChecker:
+        return cls(
+            run_id = remote['run_id'],
+            started = datetime.datetime.strptime(remote['started'], DATETIME_FORMAT),
+            timeout = datetime.datetime.strptime(remote['timeout'], DATETIME_FORMAT),
+            link = remote['link'],
+            canceled = remote['canceled'],
+        )

@@ -404,5 +404,9 @@ class ToDo(StringIdentified):
         )
 
 
-def create(engine: Engine):
-    Base.metadata.create_all(engine)
+class CIToken(Base):
+    __tablename__ = 'ci_token'
+    id = Column(Integer, primary_key = True)
+    name = Column(String(127), nullable = False)
+    value = Column(String(127), nullable = False)
+    created_at = Column(DateTime, default = datetime.datetime.now, nullable = False)

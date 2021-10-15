@@ -1,6 +1,7 @@
 import dataclasses
 import datetime
 import json
+import re
 import typing as t
 from abc import abstractmethod
 
@@ -15,6 +16,7 @@ from fml.client import values as v
 from fml.client.cli.context import Context, OutputMode
 from fml.client.utils import format_timedelta
 from fml.client.values import ALARM_DATETIME_FORMAT, DATETIME_FORMAT
+from fml.common.ci.models import CIRun
 
 
 def _print_striped_table(
@@ -66,16 +68,16 @@ class _MultiItemPrinter(t.Generic[T]):
         if Context.output_mode == OutputMode.TABLE:
             _print_striped_table(
                 self.headers,
-                [self.format_item(item, **kwargs) for item in items],
+                [self.format_item(item, idx = idx, **kwargs) for idx, item in enumerate(items)],
                 title = kwargs.get('title', self.title),
             )
         elif Context.output_mode == OutputMode.LIST:
             title = kwargs.get('title', self.title)
             if title:
                 print(title)
-            for item in items:
+            for idx, item in enumerate(items):
                 print(self.get_item_header(item, **kwargs))
-                for key, value in zip(self.headers, self.format_item(item, **kwargs)):
+                for key, value in zip(self.headers, self.format_item(item, idx = idx, **kwargs)):
                     print(
                         Text('\t')
                         + Text(key, style = Style(color = v.C_LIGHT_GREY))
@@ -289,3 +291,54 @@ def show_points(
     plt.grid(False, True)
 
     plt.show()
+
+
+class CICheckerPrinter(_MultiItemPrinter[models.CIChecker]):
+    title = None
+    headers = ['Run ID', 'Started', 'Timeout', 'Link', 'Status']
+
+    @classmethod
+    def format_item(cls, item: models.CIChecker, **kwargs) -> t.Sequence[t.Any]:
+        return [
+            str(item.pk),
+            item.started.strftime(ALARM_DATETIME_FORMAT),
+            item.timeout.strftime(ALARM_DATETIME_FORMAT),
+            item.link,
+            Text(item.status, style = Style(color = v.ALARM_STATUS_COLOR_MAP[item.status])),
+        ]
+
+    @classmethod
+    def get_item_header(cls, item: models.Alarm, **kwargs) -> str:
+        return str(item.pk)
+
+
+print_ci_checkers = CICheckerPrinter()
+
+
+class CIRunPrinter(_MultiItemPrinter[CIRun]):
+    title = None
+    headers = ['IDX', 'ID', 'Name', 'Start', 'Elapsed', 'State', 'Result']
+
+    @classmethod
+    def format_item(cls, item: CIRun, **kwargs) -> t.Sequence[t.Any]:
+        _diff_regex = re.compile('D\d+$')
+        return [
+            str(kwargs['idx']),
+            '[link={}]{}[/link]'.format(item.link, item['id']),
+            (
+                '[link=https://phabricator.uniid.it/{diff}]{diff}[/link]'.format(diff = item['name'])
+                if _diff_regex.match(item['name']) else
+                item['name']
+            ),
+            item.started_at.strftime(ALARM_DATETIME_FORMAT),
+            format_timedelta(item.elapsed),
+            Text(item['state'], style = Style(color = v.CI_STATUS_COLOR_MAP.get(item['state'], v.C_NEUTRAL))),
+            Text(item['result'], style = Style(color = v.CI_STATUS_COLOR_MAP.get(item['result'], v.C_NEUTRAL))),
+        ]
+
+    @classmethod
+    def get_item_header(cls, item: models.Alarm, **kwargs) -> str:
+        return str(item.pk)
+
+
+print_ci_runs = CIRunPrinter()

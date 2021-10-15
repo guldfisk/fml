@@ -594,3 +594,29 @@ class Client(object):
                 }
             )['priorities']
         ]
+
+    def ci_watch(self, run_id: t.Union[str, int], superseed: bool = False) -> models.CIChecker:
+        return models.CIChecker.from_remote(
+            self._make_request(
+                'ci/watch/',
+                'POST',
+                {
+                    'run_id': run_id,
+                    'superseed': superseed,
+                }
+            )
+        )
+
+    def ci_watching(self) -> t.Sequence[models.CIChecker]:
+        return [
+            models.CIChecker.from_remote(checker)
+            for checker in
+            self._make_request(
+                'ci/watching/',
+            )['ci_checkers']
+        ]
+
+    def latest_ci_token(self) -> t.Mapping[str, str]:
+        return self._make_request(
+            'ci/latest-token/',
+        )

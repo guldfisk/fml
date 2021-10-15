@@ -15,7 +15,6 @@ def run():
         default = False,
     )
 
-    models.create(engine)
     MANAGER.check()
 
     args = parser.parse_args()

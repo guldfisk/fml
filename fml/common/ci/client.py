@@ -2,16 +2,7 @@ import typing as t
 
 import requests
 
-
-class RunStatus(list):
-
-    @property
-    def finished(self) -> bool:
-        return all(n.get('state') in ('FINISHED', 'NOT_BUILT') for n in self)
-
-    @property
-    def succeeded(self):
-        return all(n.get('result') in ('SUCCESS', 'NOT_BUILT') for n in self)
+from fml.common.ci import models
 
 
 class CIClient(object):
@@ -24,8 +15,8 @@ class CIClient(object):
         self._session = requests.session()
         self._session.cookies.set(self._cookie_name, self._cookie_value, domain = self.host)
 
-    def get_run_status(self, run_id: t.Union[str, int]) -> RunStatus:
-        return RunStatus(
+    def get_run_status(self, run_id: t.Union[str, int]) -> models.RunStatus:
+        return models.RunStatus(
             self._session.get(
                 'http://{}/blue/rest/organizations/jenkins/pipelines/unisport/runs/{}/nodes/'.format(
                     self.host,
@@ -33,3 +24,15 @@ class CIClient(object):
                 )
             ).json()
         )
+
+    def get_runs(self, start: int = 0, limit: int = 10) -> t.Sequence[models.CIRun]:
+        return [
+            models.CIRun(run)
+            for run in
+            self._session.get(
+                'http://{}/blue/rest/organizations/jenkins/pipelines/unisport/runs/'.format(
+                    self.host,
+                ),
+                params = {'start': start, 'limit': limit}
+            ).json()
+        ]

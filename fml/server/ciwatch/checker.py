@@ -1,10 +1,10 @@
 import datetime
-import time
 import typing as t
 import threading
 
 from fml import notify
-from fml.server.ciwatch.client import CIClient
+from fml.common.ci.client import CIClient
+from fml.server.views.utils import DATETIME_FORMAT
 
 
 class CIChecker(threading.Thread):
@@ -15,7 +15,7 @@ class CIChecker(threading.Thread):
         cookie_name: str,
         cookie_value: str,
         run_id: t.Union[int, str],
-        timeout: int = 60 * 30,
+        timeout: int = 60 * 60,
         callback: t.Optional[t.Callable[[t.Union[str, int], bool], None]] = None,
     ):
         super().__init__()
@@ -23,10 +23,27 @@ class CIChecker(threading.Thread):
         self._run_id = run_id
         self._timeout = timeout
         self._callback = callback or (lambda _, __: None)
+        self._canceled = threading.Event()
+
+    def cancel(self) -> None:
+        self._canceled.set()
+
+    @property
+    def started_at(self) -> datetime.datetime:
+        return self._st
+
+    @property
+    def link(self) -> str:
+        return 'http://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
+            self._run_id,
+        )
 
     def run(self) -> None:
         self._st = datetime.datetime.now()
         while True:
+            if self._canceled.is_set():
+                self._callback(self._run_id, False)
+                return
             if datetime.datetime.now() > self._st + datetime.timedelta(seconds = self._timeout):
                 notify.notify('Timed out checking CI run', str(self._run_id))
                 self._callback(self._run_id, False)
@@ -40,10 +57,17 @@ class CIChecker(threading.Thread):
             if status.finished:
                 notify.notify(
                     'CI run finished: {}'.format('SUCCEEDED' if status.succeeded else 'FAILED'),
-                    'http://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
-                        self._run_id,
-                    ),
+                    self.link,
                 )
                 self._callback(self._run_id, True)
                 return
-            time.sleep(5)
+            self._canceled.wait(5)
+
+    def serialize(self) -> t.Mapping[str, t.Any]:
+        return {
+            'run_id': self._run_id,
+            'started': self._st.strftime(DATETIME_FORMAT),
+            'timeout': (self._st + datetime.timedelta(seconds = self._timeout)).strftime(DATETIME_FORMAT),
+            'link': self.link,
+            'canceled': self._canceled.is_set(),
+        }
