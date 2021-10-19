@@ -33,3 +33,7 @@ class CIRun(dict):
         return 'http://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
             self['id'],
         )
+
+    @property
+    def name(self) -> str:
+        return self.get('name', 'unknown')

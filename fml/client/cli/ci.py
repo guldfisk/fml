@@ -14,8 +14,13 @@ def ci_service() -> None:
     pass
 
 
+def _get_client() -> CIClient:
+    token = Client().latest_ci_token()
+    return CIClient(token['name'], token['value'])
+
+
 @ci_service.command(name = 'watch')
-@click.argument('number_from_top', type = int, required = True)
+@click.argument('number_from_top', type = int, required = False, default = 0)
 @click.option(
     '--superseed', '-s',
     default = False,
@@ -28,8 +33,7 @@ def watch(number_from_top: int, superseed: bool):
     """
     Watch CI run.
     """
-    token = Client().latest_ci_token()
-    client = CIClient(token['name'], token['value'])
+    client = _get_client()
     output.print_ci_checkers(
         Client().ci_watch(
             run_id = client.get_runs(start = number_from_top, limit = 1)[-1]['id'],
@@ -48,14 +52,22 @@ def watching():
     )
 
 
+@ci_service.command(name = 'build-master')
+def build_master():
+    """
+    Start new master build
+    """
+    client = _get_client()
+    print(client.start_master_build().get('STATE'))
+
+
 @ci_service.command(name = 'list')
 @click.option('--limit', '-l', default = 10, type = int, help = 'Limit.')
 def runs_list(limit: int):
     """
     List latest CI runs
     """
-    token = Client().latest_ci_token()
-    client = CIClient(token['name'], token['value'])
+    client = _get_client()
     output.print_ci_runs(
         client.get_runs(limit = limit)
     )

@@ -14,6 +14,30 @@ class CIClient(object):
 
         self._session = requests.session()
         self._session.cookies.set(self._cookie_name, self._cookie_value, domain = self.host)
+        self._session.headers.update({'Content-Type': 'application/json'})
+
+    def _update_crumb(self) -> None:
+        r = self._session.get(
+            'https://{}/crumbIssuer/api/json'.format(self.host)
+        ).json()
+        self._session.headers.update({r['crumbRequestField']: r['crumb']})
+
+    def start_master_build(self) -> t.Any:
+        self._update_crumb()
+        r = self._session.post(
+            'http://{}/blue/rest/organizations/jenkins/pipelines/unisport//runs/'.format(self.host),
+            json={
+                'parameters': [
+                    {'name': 'DIFF_ID', 'value': ''},
+                    {'name': 'PHID', 'value': ''},
+                    {'name': 'REVISION_ID', 'value': ''},
+                    {'name': 'BUILD_ID', 'value': ''},
+                    {'name': 'IS_NIGHTLY', 'value': False},
+                ]
+            },
+        )
+        r.raise_for_status()
+        return r.json()
 
     def get_run_status(self, run_id: t.Union[str, int]) -> models.RunStatus:
         return models.RunStatus(

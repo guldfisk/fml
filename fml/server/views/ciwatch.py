@@ -52,6 +52,24 @@ def watching():
     }
 
 
+@ci_watch_views.route('/update-token/', methods = ['POST'])
+@with_errors
+@inject_schema(
+    Schema(
+        {
+            'cookie_name': fields.Text(),
+            'cookie_value': fields.Text(),
+        }
+    ),
+    use_args = False,
+)
+def update_token(cookie_name: str, cookie_value: str):
+    token = models.CIToken(name = cookie_name, value = cookie_value)
+    SC.session.add(token)
+    SC.session.commit()
+    return {'status': 'ok'}
+
+
 @ci_watch_views.route('/latest-token/', methods = ['GET'])
 @with_errors
 def latest_token():
