@@ -34,7 +34,7 @@ class CIChecker(threading.Thread):
 
     @property
     def link(self) -> str:
-        return 'http://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
+        return 'https://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
             self._run_id,
         )
 

@@ -26,7 +26,7 @@ class CIClient(object):
         self._update_crumb()
         r = self._session.post(
             'http://{}/blue/rest/organizations/jenkins/pipelines/unisport//runs/'.format(self.host),
-            json={
+            json = {
                 'parameters': [
                     {'name': 'DIFF_ID', 'value': ''},
                     {'name': 'PHID', 'value': ''},
@@ -42,7 +42,7 @@ class CIClient(object):
     def get_run_status(self, run_id: t.Union[str, int]) -> models.RunStatus:
         return models.RunStatus(
             self._session.get(
-                'http://{}/blue/rest/organizations/jenkins/pipelines/unisport/runs/{}/nodes/'.format(
+                'https://{}/blue/rest/organizations/jenkins/pipelines/unisport/runs/{}/'.format(
                     self.host,
                     run_id,
                 )

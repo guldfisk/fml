@@ -81,6 +81,15 @@ def ding(blocking: bool) -> None:
         Client().ding()
 
 
+@main.command(name = 'app')
+def app() -> None:
+    """
+    Test TUI app.
+    """
+    from fml.client.tui.alarmlist import TestApp
+    TestApp.run()
+
+
 def get_default_project(project: t.Optional[str] = None) -> t.Optional[str]:
     p = project or os.environ.get('DEFP')
     return p if p else None

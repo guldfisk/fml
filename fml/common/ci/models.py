@@ -4,15 +4,15 @@ import datetime
 LOCAL_TIMEZONE = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinfo
 
 
-class RunStatus(list):
+class RunStatus(dict):
 
     @property
     def finished(self) -> bool:
-        return all(n.get('state') in ('FINISHED', 'NOT_BUILT') for n in self)
+        return self.get('result') not in ('UNKNOWN', 'RUNNING')
 
     @property
-    def succeeded(self):
-        return all(n.get('result') in ('SUCCESS', 'NOT_BUILT') for n in self)
+    def succeeded(self) -> bool:
+        return self.get('result') == 'SUCCESS'
 
 
 class CIRun(dict):
@@ -30,10 +30,10 @@ class CIRun(dict):
 
     @property
     def link(self) -> str:
-        return 'http://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
+        return 'https://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
             self['id'],
         )
 
     @property
     def name(self) -> str:
-        return self.get('name', 'unknown')
+        return self.get('name') or 'unknown'

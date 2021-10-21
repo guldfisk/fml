@@ -19,11 +19,11 @@ from fml.client.values import ALARM_DATETIME_FORMAT, DATETIME_FORMAT
 from fml.common.ci.models import CIRun
 
 
-def _print_striped_table(
+def _get_striped_table(
     headers: t.Sequence[str],
     rows: t.Iterable[t.Sequence[RenderableType]],
     title: t.Optional[str] = None,
-):
+) -> Table:
     table = Table(title = title)
 
     for column_name in headers:
@@ -35,6 +35,15 @@ def _print_striped_table(
             style = Style(bgcolor = v.LINE_BG_COLOR_ALTERNATE if idx & 1 else v.LINE_BG_COLOR),
         )
 
+    return table
+
+
+def _print_striped_table(
+    headers: t.Sequence[str],
+    rows: t.Iterable[t.Sequence[RenderableType]],
+    title: t.Optional[str] = None,
+):
+    table = _get_striped_table(headers, rows, title)
     console = Console()
     console.print(table)
 
@@ -61,6 +70,13 @@ class _MultiItemPrinter(t.Generic[T]):
     @abstractmethod
     def get_item_header(cls, item: T, **kwargs) -> str:
         pass
+
+    def get_table(self, items: t.Sequence[T], **kwargs) -> Table:
+        return _get_striped_table(
+            self.headers,
+            [self.format_item(item, idx = idx, **kwargs) for idx, item in enumerate(items)],
+            title = kwargs.get('title', self.title),
+        )
 
     def __call__(self, items: t.Union[T, t.Sequence[T]], **kwargs) -> None:
         if not isinstance(items, t.Sequence) and Context.output_mode in (OutputMode.TABLE, OutputMode.LIST):
@@ -321,6 +337,13 @@ class CIRunPrinter(_MultiItemPrinter[CIRun]):
     @classmethod
     def format_item(cls, item: CIRun, **kwargs) -> t.Sequence[t.Any]:
         _diff_regex = re.compile('D\d+$')
+
+        #TODO remove
+        try:
+            _diff_regex.match(item.name)
+        except TypeError:
+            print(item.name)
+
         return [
             str(kwargs['idx']),
             '[link={}]{}[/link]'.format(item.link, item['id']),
