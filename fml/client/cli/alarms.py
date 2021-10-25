@@ -6,7 +6,6 @@ import click
 from fml.client import output
 from fml.client.cli.common import AliasedGroup, main, split_text_option, force_option
 from fml.client.client import Client
-from fml.client.dtmath.parse import DTMParseException
 
 
 @main.group('alarm', cls = AliasedGroup)
@@ -68,7 +67,7 @@ def new_alarm(
     if absolute is None:
         base_datetime = datetime.datetime.now()
     else:
-        from fml.client.dtmath.parse import DTMParser
+        from fml.client.dtmath.parse import DTMParser, DTMParseException
         try:
             base_datetime = DTMParser().parse(absolute)
         except (DTMParseException, ValueError) as e:
@@ -170,7 +169,7 @@ def snooze_alarm(target: str, new_target_time: str) -> None:
     Snooze alarm requiring acknowledgement. You can only snooze alarms after their target time.
     Target is either id of alarm or a uniquely identifying string.
     """
-    from fml.client.dtmath.parse import DTMParser
+    from fml.client.dtmath.parse import DTMParser, DTMParseException
 
     try:
         new_target_time = DTMParser().parse(new_target_time)

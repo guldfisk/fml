@@ -1,3 +1,4 @@
+import datetime
 import typing as t
 import threading
 
@@ -26,7 +27,7 @@ class CIWatchManager(object):
         cookie_name: str,
         cookie_value: str,
         run_id: t.Union[int, str],
-        timeout: int = 60 * 60,
+        timeout: t.Optional[datetime.datetime] = None,
         superseed: bool = False,
     ) -> CIChecker:
         run_id = str(run_id)

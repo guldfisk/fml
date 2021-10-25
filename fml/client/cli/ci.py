@@ -1,3 +1,6 @@
+import datetime
+import typing as t
+
 import click
 
 from fml.client import output
@@ -22,6 +25,11 @@ def _get_client() -> CIClient:
 @ci_service.command(name = 'watch')
 @click.argument('number_from_top', type = int, required = False, default = 0)
 @click.option(
+    '--timeout', '-t',
+    type = str,
+    required = False,
+)
+@click.option(
     '--superseed', '-s',
     default = False,
     type = bool,
@@ -29,14 +37,31 @@ def _get_client() -> CIClient:
     show_default = True,
     help = 'Unwatch all other runs.',
 )
-def watch(number_from_top: int, superseed: bool):
+def watch(number_from_top: int, timeout: t.Optional[str], superseed: bool):
     """
     Watch CI run.
     """
+    if timeout is not None:
+        from fml.client.dtmath.parse import DTMParser, DTMParseException
+        try:
+            timeout = DTMParser().parse(timeout)
+        except (DTMParseException, ValueError) as e:
+            print(e)
+            return
+        except TypeError:
+            print('can\'t add dates')
+            return
+        if isinstance(timeout, datetime.timedelta):
+            timeout += datetime.datetime.now()
+        if timeout < datetime.datetime.now():
+            print('timeout must be scheduled for future')
+            return
+
     client = _get_client()
     output.print_ci_checkers(
         Client().ci_watch(
             run_id = client.get_runs(start = number_from_top, limit = 1)[-1]['id'],
+            timeout = timeout,
             superseed = superseed,
         )
     )
@@ -58,7 +83,7 @@ def build_master():
     Start new master build
     """
     client = _get_client()
-    print(client.start_master_build().get('STATE'))
+    print(client.start_master_build().get('state'))
 
 
 @ci_service.command(name = 'list')

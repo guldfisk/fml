@@ -4,7 +4,6 @@ import typing as t
 import click
 
 from fml.client.cli.common import main, split_text_option
-from fml.client.dtmath.parse import DTMParseException
 from fml.client.utils import format_timedelta, format_timedelta_years
 from fml.client.values import ALARM_DATETIME_FORMAT
 
@@ -25,7 +24,7 @@ def dt_math(args: t.Sequence[str], format_years: bool):
     Datetime calculator.
     Time to next year: ".1/jan - n".
     """
-    from fml.client.dtmath.parse import DTMParser
+    from fml.client.dtmath.parse import DTMParser, DTMParseException
     import re
 
     s = re.sub('{(.*?)}', lambda m: str(eval(m.group(1))), ' '.join(args))

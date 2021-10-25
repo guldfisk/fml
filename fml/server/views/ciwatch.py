@@ -1,3 +1,4 @@
+import datetime
 import typing as t
 
 from flask import Blueprint
@@ -24,12 +25,19 @@ request: APIRequest
             'cookie_name': fields.Text(required = False, default = None),
             'cookie_value': fields.Text(required = False, default = None),
             'run_id': fields.Text(),
+            'timeout': fields.Datetime(required = False, default = None),
             'superseed': fields.Bool(default = False),
         }
     ),
     use_args = False,
 )
-def watch_ci(cookie_name: t.Optional[str], cookie_value: t.Optional[str], run_id: str, superseed: bool):
+def watch_ci(
+    cookie_name: t.Optional[str],
+    cookie_value: t.Optional[str],
+    run_id: str,
+    timeout: t.Optional[datetime.datetime],
+    superseed: bool,
+):
     if cookie_name and cookie_value:
         token = models.CIToken(name = cookie_name, value = cookie_value)
         SC.session.add(token)
@@ -37,7 +45,7 @@ def watch_ci(cookie_name: t.Optional[str], cookie_value: t.Optional[str], run_id
     else:
         token = SC.session.query(models.CIToken).order_by(models.CIToken.created_at.desc()).first()
         cookie_name, cookie_value = token.name, token.value
-    return CI_WATCHER.watch(cookie_name, cookie_value, run_id, superseed = superseed).serialize()
+    return CI_WATCHER.watch(cookie_name, cookie_value, run_id, timeout = timeout, superseed = superseed).serialize()
 
 
 @ci_watch_views.route('/watching/', methods = ['GET'])

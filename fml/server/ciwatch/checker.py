@@ -15,7 +15,7 @@ class CIChecker(threading.Thread):
         cookie_name: str,
         cookie_value: str,
         run_id: t.Union[int, str],
-        timeout: int = 60 * 60,
+        timeout: t.Optional[datetime.datetime] = None,
         callback: t.Optional[t.Callable[[t.Union[str, int], bool], None]] = None,
     ):
         super().__init__()
@@ -40,11 +40,13 @@ class CIChecker(threading.Thread):
 
     def run(self) -> None:
         self._st = datetime.datetime.now()
+        if self._timeout is None:
+            self._timeout = self._st + datetime.timedelta(hours = 1)
         while True:
             if self._canceled.is_set():
                 self._callback(self._run_id, False)
                 return
-            if datetime.datetime.now() > self._st + datetime.timedelta(seconds = self._timeout):
+            if datetime.datetime.now() > self._timeout:
                 notify.notify('Timed out checking CI run', str(self._run_id))
                 self._callback(self._run_id, False)
                 return
@@ -67,7 +69,7 @@ class CIChecker(threading.Thread):
         return {
             'run_id': self._run_id,
             'started': self._st.strftime(DATETIME_FORMAT),
-            'timeout': (self._st + datetime.timedelta(seconds = self._timeout)).strftime(DATETIME_FORMAT),
+            'timeout': self._timeout.strftime(DATETIME_FORMAT),
             'link': self.link,
             'canceled': self._canceled.is_set(),
         }

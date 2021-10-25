@@ -595,13 +595,19 @@ class Client(object):
             )['priorities']
         ]
 
-    def ci_watch(self, run_id: t.Union[str, int], superseed: bool = False) -> models.CIChecker:
+    def ci_watch(
+        self,
+        run_id: t.Union[str, int],
+        timeout: t.Optional[datetime.datetime] = None,
+        superseed: bool = False,
+    ) -> models.CIChecker:
         return models.CIChecker.from_remote(
             self._make_request(
                 'ci/watch/',
                 'POST',
                 {
                     'run_id': run_id,
+                    'timeout': None if timeout is None else timeout.strftime('%d/%m/%Y %H:%M:%S'),
                     'superseed': superseed,
                 }
             )
