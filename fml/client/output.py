@@ -311,13 +311,14 @@ def show_points(
 
 class CICheckerPrinter(_MultiItemPrinter[models.CIChecker]):
     title = None
-    headers = ['Run ID', 'Started', 'Timeout', 'Status']
+    headers = ['Run ID', 'Started', 'Elapsed', 'Timeout', 'Status']
 
     @classmethod
     def format_item(cls, item: models.CIChecker, **kwargs) -> t.Sequence[t.Any]:
         return [
             '[link={}]{}[/link]'.format(item.link, item.pk),
             item.started.strftime(ALARM_DATETIME_FORMAT),
+            format_timedelta(item.elapsed),
             item.timeout.strftime(ALARM_DATETIME_FORMAT),
             Text(item.status, style = Style(color = v.ALARM_STATUS_COLOR_MAP[item.status])),
         ]
@@ -337,12 +338,6 @@ class CIRunPrinter(_MultiItemPrinter[CIRun]):
     @classmethod
     def format_item(cls, item: CIRun, **kwargs) -> t.Sequence[t.Any]:
         _diff_regex = re.compile('D\d+$')
-
-        #TODO remove
-        try:
-            _diff_regex.match(item.name)
-        except TypeError:
-            print(item.name)
 
         return [
             str(kwargs['idx']),

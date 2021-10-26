@@ -376,6 +376,10 @@ class CIChecker(RemoteModel):
             return 'CANCELED'
         return 'PENDING'
 
+    @property
+    def elapsed(self) -> datetime.timedelta:
+        return max(datetime.datetime.now() - self.started, datetime.timedelta(seconds = 0))
+
     @classmethod
     def from_remote(cls, remote: Serialized) -> CIChecker:
         return cls(
