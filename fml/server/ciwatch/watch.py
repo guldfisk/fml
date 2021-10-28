@@ -20,7 +20,7 @@ class CIWatchManager(object):
 
     def watching(self) -> t.Sequence[CIChecker]:
         with self._lock:
-            return sorted(self._watching.values(), key = lambda v: v.started_at)
+            return sorted(self._watching.values(), key = lambda v: v.started_at, reverse = True)
 
     def watch(
         self,

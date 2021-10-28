@@ -333,7 +333,7 @@ print_ci_checkers = CICheckerPrinter()
 
 class CIRunPrinter(_MultiItemPrinter[CIRun]):
     title = None
-    headers = ['IDX', 'ID', 'Name', 'Start', 'Elapsed', 'State', 'Result']
+    headers = ['IDX', 'ID', 'Name', 'Start', 'Elapsed', 'Ended', 'State', 'Result']
 
     @classmethod
     def format_item(cls, item: CIRun, **kwargs) -> t.Sequence[t.Any]:

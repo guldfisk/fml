@@ -1,3 +1,5 @@
+import typing as t
+
 import datetime
 
 
@@ -16,13 +18,25 @@ class RunStatus(dict):
 
 
 class CIRun(dict):
+    DT_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
 
     @property
-    def started_at(self):
+    def started_at(self) -> datetime.datetime:
         return datetime.datetime.strptime(
             self['startTime'],
-            '%Y-%m-%dT%H:%M:%S.%f%z',
+            self.DT_FORMAT,
         ).astimezone(LOCAL_TIMEZONE).replace(tzinfo = None)
+
+    @property
+    def ended_at(self) -> t.Optional[datetime.datetime]:
+        return (
+            datetime.datetime.strptime(
+                self['endTime'],
+                self.DT_FORMAT,
+            ).astimezone(LOCAL_TIMEZONE).replace(tzinfo = None)
+            if self.get('endTime') else
+            None
+        )
 
     @property
     def elapsed(self) -> datetime.timedelta:
