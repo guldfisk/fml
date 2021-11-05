@@ -144,6 +144,16 @@ class dtmath_grammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dtmath_grammarParser#WeekNumberDay.
+    def visitWeekNumberDay(self, ctx:dtmath_grammarParser.WeekNumberDayContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dtmath_grammarParser#NextWeekNumberDay.
+    def visitNextWeekNumberDay(self, ctx:dtmath_grammarParser.NextWeekNumberDayContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dtmath_grammarParser#NumericalMonth.
     def visitNumericalMonth(self, ctx:dtmath_grammarParser.NumericalMonthContext):
         return self.visitChildren(ctx)
@@ -174,6 +184,21 @@ class dtmath_grammarVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dtmath_grammarParser#AmpmHour.
+    def visitAmpmHour(self, ctx:dtmath_grammarParser.AmpmHourContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dtmath_grammarParser#AmpmHourMinute.
+    def visitAmpmHourMinute(self, ctx:dtmath_grammarParser.AmpmHourMinuteContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dtmath_grammarParser#AmpmHourSecond.
+    def visitAmpmHourSecond(self, ctx:dtmath_grammarParser.AmpmHourSecondContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dtmath_grammarParser#HourMinute.
     def visitHourMinute(self, ctx:dtmath_grammarParser.HourMinuteContext):
         return self.visitChildren(ctx)
@@ -181,6 +206,11 @@ class dtmath_grammarVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by dtmath_grammarParser#HourMinuteSecond.
     def visitHourMinuteSecond(self, ctx:dtmath_grammarParser.HourMinuteSecondContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dtmath_grammarParser#ampm.
+    def visitAmpm(self, ctx:dtmath_grammarParser.AmpmContext):
         return self.visitChildren(ctx)
 
 

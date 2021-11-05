@@ -5,7 +5,7 @@ import click
 
 from fml.client.cli.common import main, split_text_option
 from fml.client.utils import format_timedelta, format_timedelta_years
-from fml.client.values import ALARM_DATETIME_FORMAT
+from fml.client.values import FULL_DATETIME_FORMAT
 
 
 @main.command(name = 'dt')
@@ -44,4 +44,4 @@ def dt_math(args: t.Sequence[str], format_years: bool):
                 )(result)
             )
         else:
-            print('time: ' + result.strftime(ALARM_DATETIME_FORMAT))
+            print('time: ' + result.strftime(FULL_DATETIME_FORMAT))

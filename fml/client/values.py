@@ -3,6 +3,7 @@ from enum import Enum
 
 DATETIME_FORMAT = '%d/%m/%Y %H:%M:%S'
 ALARM_DATETIME_FORMAT = '%d/%m/%Y %a %H:%M:%S'
+FULL_DATETIME_FORMAT = '%d/%m/%Y week %W %a %H:%M:%S'
 
 LINE_BG_COLOR = '#101010'
 LINE_BG_COLOR_ALTERNATE = '#303030'

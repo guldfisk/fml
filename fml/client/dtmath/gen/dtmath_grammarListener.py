@@ -251,6 +251,24 @@ class dtmath_grammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dtmath_grammarParser#WeekNumberDay.
+    def enterWeekNumberDay(self, ctx:dtmath_grammarParser.WeekNumberDayContext):
+        pass
+
+    # Exit a parse tree produced by dtmath_grammarParser#WeekNumberDay.
+    def exitWeekNumberDay(self, ctx:dtmath_grammarParser.WeekNumberDayContext):
+        pass
+
+
+    # Enter a parse tree produced by dtmath_grammarParser#NextWeekNumberDay.
+    def enterNextWeekNumberDay(self, ctx:dtmath_grammarParser.NextWeekNumberDayContext):
+        pass
+
+    # Exit a parse tree produced by dtmath_grammarParser#NextWeekNumberDay.
+    def exitNextWeekNumberDay(self, ctx:dtmath_grammarParser.NextWeekNumberDayContext):
+        pass
+
+
     # Enter a parse tree produced by dtmath_grammarParser#NumericalMonth.
     def enterNumericalMonth(self, ctx:dtmath_grammarParser.NumericalMonthContext):
         pass
@@ -305,6 +323,33 @@ class dtmath_grammarListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dtmath_grammarParser#AmpmHour.
+    def enterAmpmHour(self, ctx:dtmath_grammarParser.AmpmHourContext):
+        pass
+
+    # Exit a parse tree produced by dtmath_grammarParser#AmpmHour.
+    def exitAmpmHour(self, ctx:dtmath_grammarParser.AmpmHourContext):
+        pass
+
+
+    # Enter a parse tree produced by dtmath_grammarParser#AmpmHourMinute.
+    def enterAmpmHourMinute(self, ctx:dtmath_grammarParser.AmpmHourMinuteContext):
+        pass
+
+    # Exit a parse tree produced by dtmath_grammarParser#AmpmHourMinute.
+    def exitAmpmHourMinute(self, ctx:dtmath_grammarParser.AmpmHourMinuteContext):
+        pass
+
+
+    # Enter a parse tree produced by dtmath_grammarParser#AmpmHourSecond.
+    def enterAmpmHourSecond(self, ctx:dtmath_grammarParser.AmpmHourSecondContext):
+        pass
+
+    # Exit a parse tree produced by dtmath_grammarParser#AmpmHourSecond.
+    def exitAmpmHourSecond(self, ctx:dtmath_grammarParser.AmpmHourSecondContext):
+        pass
+
+
     # Enter a parse tree produced by dtmath_grammarParser#HourMinute.
     def enterHourMinute(self, ctx:dtmath_grammarParser.HourMinuteContext):
         pass
@@ -320,6 +365,15 @@ class dtmath_grammarListener(ParseTreeListener):
 
     # Exit a parse tree produced by dtmath_grammarParser#HourMinuteSecond.
     def exitHourMinuteSecond(self, ctx:dtmath_grammarParser.HourMinuteSecondContext):
+        pass
+
+
+    # Enter a parse tree produced by dtmath_grammarParser#ampm.
+    def enterAmpm(self, ctx:dtmath_grammarParser.AmpmContext):
+        pass
+
+    # Exit a parse tree produced by dtmath_grammarParser#ampm.
+    def exitAmpm(self, ctx:dtmath_grammarParser.AmpmContext):
         pass
 
 

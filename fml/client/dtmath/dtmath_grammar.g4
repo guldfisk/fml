@@ -50,6 +50,8 @@ day :
     | duo '/' month #RecurringDate
     | '.' duo '/' month #NextRecurringDate
     | duo '/' month '/' year #Date
+    | 'w' any_number '/' weekday #WeekNumberDay
+    | '.' 'w' any_number '/' weekday #NextWeekNumberDay
 ;
 
 month :
@@ -65,9 +67,14 @@ year :
 timeofday :
     QUAD #QuadTime
     | duo #Hour
+    | duo ampm #AmpmHour
+    | duo ':' duo ampm #AmpmHourMinute
+    | duo ':' duo ':' duo ampm #AmpmHourSecond
     | duo ':' duo #HourMinute
     | duo ':' duo ':' duo #HourMinuteSecond
 ;
+
+ampm : 'am' | 'pm';
 
 duo : PAIR | SINGLE;
 

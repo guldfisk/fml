@@ -83,6 +83,27 @@ class DTMVisitor(dtmath_grammarVisitor):
             year = self.visit(ctx.year()),
         )
 
+    def visitWeekNumberDay(self, ctx: dtmath_grammarParser.WeekNumberDayContext):
+        return datetime.datetime.fromisocalendar(
+            year = self._current_date().year,
+            week = self.visit(ctx.any_number()),
+            day = self.visit(ctx.weekday()) + 1,
+        )
+
+    def visitNextWeekNumberDay(self, ctx: dtmath_grammarParser.NextWeekNumberDayContext):
+        dt = datetime.datetime.fromisocalendar(
+            year = self._current_date().year,
+            week = self.visit(ctx.any_number()),
+            day = self.visit(ctx.weekday()) + 1,
+        )
+        if self._current_date() >= dt:
+            return datetime.datetime.fromisocalendar(
+                year = self._current_date().year + 1,
+                week = self.visit(ctx.any_number()),
+                day = self.visit(ctx.weekday()) + 1,
+            )
+        return dt
+
     def visitNumericalMonth(self, ctx: dtmath_grammarParser.NumericalMonthContext):
         return self.visit(ctx.duo())
 
@@ -101,6 +122,38 @@ class DTMVisitor(dtmath_grammarVisitor):
 
     def visitHour(self, ctx: dtmath_grammarParser.HourContext):
         return datetime.timedelta(hours = self.visit(ctx.duo()))
+
+    def visitAmpmHour(self, ctx: dtmath_grammarParser.AmpmHourContext):
+        return datetime.timedelta(
+            hours = datetime.datetime.strptime(
+                f'{self.visit(ctx.duo())}{self.visit(ctx.ampm())}',
+                '%I%p',
+            ).hour
+        )
+
+    def visitAmpmHourMinute(self, ctx: dtmath_grammarParser.AmpmHourMinuteContext):
+        dt = datetime.datetime.strptime(
+            f'{self.visit(ctx.duo(0))} {self.visit(ctx.duo(1))} {self.visit(ctx.ampm())}',
+            '%I %M %p',
+        )
+        return datetime.timedelta(
+            hours = dt.hour,
+            minutes = dt.minute,
+        )
+
+    def visitAmpmHourSecond(self, ctx: dtmath_grammarParser.AmpmHourSecondContext):
+        dt = datetime.datetime.strptime(
+            f'{self.visit(ctx.duo(0))} {self.visit(ctx.duo(1))} {self.visit(ctx.duo(2))} {self.visit(ctx.ampm())}',
+            '%I %M %S %p',
+        )
+        return datetime.timedelta(
+            hours = dt.hour,
+            minutes = dt.minute,
+            seconds = dt.second,
+        )
+
+    def visitAmpm(self, ctx: dtmath_grammarParser.AmpmContext):
+        return ctx.getText()
 
     def visitHourMinute(self, ctx: dtmath_grammarParser.HourMinuteContext):
         return datetime.timedelta(
