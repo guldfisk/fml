@@ -336,17 +336,22 @@ class CIRunPrinter(_MultiItemPrinter[CIRun]):
     headers = ['IDX', 'ID', 'Name', 'Start', 'Elapsed', 'Ended', 'State', 'Result']
 
     @classmethod
+    def name_to_link(cls, name: str) -> str:
+        _diff = re.compile('D\d+$')
+        _git_hash = re.compile('[a-z0-9]{40}$')
+        if _diff.match(name):
+            return '[link=https://phabricator.uniid.it/{diff}]{diff}[/link]'.format(diff = name)
+        if _git_hash.match(name):
+            return '[link=https://github.com/unisport/unisport/commit/{hash}]{hash}[/link]'.format(hash = name)
+        return name
+
+    @classmethod
     def format_item(cls, item: CIRun, **kwargs) -> t.Sequence[t.Any]:
-        _diff_regex = re.compile('D\d+$')
 
         return [
             str(kwargs['idx']),
             '[link={}]{}[/link]'.format(item.link, item['id']),
-            (
-                '[link=https://phabricator.uniid.it/{diff}]{diff}[/link]'.format(diff = item.name)
-                if _diff_regex.match(item.name) else
-                item.name
-            ),
+            cls.name_to_link(item.name),
             item.started_at.strftime(ALARM_DATETIME_FORMAT),
             format_timedelta(item.elapsed),
             Text(item['state'], style = Style(color = v.CI_STATUS_COLOR_MAP.get(item['state'], v.C_NEUTRAL))),
