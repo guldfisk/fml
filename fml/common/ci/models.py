@@ -25,7 +25,7 @@ class CIRun(dict):
         return datetime.datetime.strptime(
             self['startTime'],
             self.DT_FORMAT,
-        ).astimezone(LOCAL_TIMEZONE).replace(tzinfo = None)
+        ).astimezone(LOCAL_TIMEZONE).replace(tzinfo = None) if 'startTime' in self else datetime.datetime.now()
 
     @property
     def ended_at(self) -> t.Optional[datetime.datetime]:
