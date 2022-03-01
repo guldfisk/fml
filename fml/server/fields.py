@@ -36,7 +36,7 @@ class StringIdentifiedField(Field[S]):
         model = self._model.get_for_identifier(
             SC.session,
             value,
-            base_query = None if self._base_query_getter is None else self._base_query_getter(SC.session)
+            base_query = None if self._base_query_getter is None else self._base_query_getter(SC.session),
         )
 
         if self.required and model is None:

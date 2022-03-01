@@ -31,3 +31,21 @@ def add_dependency(parent: models.ToDo, child: models.ToDo):
         return 'Invalid args', status.HTTP_400_BAD_REQUEST
 
     return schemas.ToDoSchema().serialize(parent), status.HTTP_201_CREATED
+
+
+# @todo_dependency_views.route('/todo/remove-dependency/', methods = ['DELETE'])
+# @inject_schema(schemas.UpdateDependencySchema(), use_args = False)
+# def add_dependency(parent: models.ToDo, child: models.ToDo):
+#     SC.session.query(models.Dependency).filter(
+#
+#     )
+#
+#     SC.session.add(dependency)
+#
+#     try:
+#         SC.session.commit()
+#     except (IntegrityError, OperationalError):
+#         SC.session.rollback()
+#         return 'Invalid args', status.HTTP_400_BAD_REQUEST
+#
+#     return schemas.ToDoSchema().serialize(parent), status.HTTP_201_CREATED

@@ -55,7 +55,7 @@ def new_todo(
     )
 
 
-@todo_service.command(name = 'mod')
+@todo_service.command(name = 'modify')
 @click.argument('todo', type = str, required = True)
 @click.argument('description', type = str, required = False)
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
@@ -455,7 +455,7 @@ def modify_project_default_priority_filter(
     )
 
 
-@todo_service.group('p', cls = AliasedGroup)
+@todo_service.group('priority', cls = AliasedGroup)
 def priority_service() -> None:
     """
     Todo priorities.
@@ -516,7 +516,7 @@ def list_priorities(project: str) -> None:
     )
 
 
-@priority_service.command(name = 'mod')
+@priority_service.command(name = 'modify')
 @click.argument('todo', type = str, required = True)
 @click.argument('priority', type = str, required = True)
 @click.option('--project', '-p', type = str, help = 'Specify project. If not specified, use default project.')
