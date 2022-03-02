@@ -13,7 +13,7 @@ def notify(
         title = title,
         description = description,
         duration = 5,
-        urgency = Notification.URGENCY_NORMAL,
+        urgency = 'normal',
     ).send()
 
 
