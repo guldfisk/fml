@@ -203,7 +203,7 @@ class Tag(StringIdentified):
 
     id = Column(Integer, primary_key = True)
     name = Column(String(127), unique = True)
-    todos: t.Sequence[ToDo] = relationship('ToDo', back_populates = 'tags', secondary = Tagged.__table__)
+    todos = relationship('ToDo', back_populates = 'tags', secondary = Tagged.__table__)
     created_at = Column(DateTime, default = datetime.datetime.now)
 
     text_identifier = synonym('name')
@@ -228,7 +228,7 @@ class Priority(StringIdentified):
 
     id = Column(Integer, primary_key = True)
     name = Column(String(127))
-    todos: t.Sequence[ToDo] = relationship('ToDo', back_populates = 'priority')
+    todos = relationship('ToDo', back_populates = 'priority')
     created_at = Column(DateTime, default = datetime.datetime.now)
     project_id = Column(
         Integer,
@@ -353,7 +353,7 @@ class ToDo(StringIdentified):
     )
     priority = relationship('Priority', back_populates = 'todos')
 
-    tags: t.Sequence[Tag] = relationship(
+    tags = relationship(
         'Tag',
         back_populates = 'todos',
         secondary = Tagged.__table__,

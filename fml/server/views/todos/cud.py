@@ -189,9 +189,9 @@ class BaseToDoList(View):
         project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
 
         todos = self.get_base_query().options(
-            joinedload('tags'),
-            joinedload('children'),
-            joinedload('comments'),
+            joinedload(models.ToDo.tags),
+            joinedload(models.ToDo.children),
+            joinedload(models.ToDo.comments),
         ).join(models.Priority)
 
         if order_by:

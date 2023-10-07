@@ -1,4 +1,4 @@
-# Generated from /home/phdk/PycharmProjects/fml/fml/client/dtmath/dtmath_grammar.g4 by ANTLR 4.9.1
+# Generated from /home/phdk/PycharmProjects/fml/fml/client/dtmath/dtmath_grammar.g4 by ANTLR 4.12.0
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -8,126 +8,104 @@ if sys.version_info[1] > 5:
 else:
 	from typing.io import TextIO
 
-
 def serializedATN():
-    with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3T")
-        buf.write("\u00ee\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
-        buf.write("\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r\4\16")
-        buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\3\2\3\2\3\2\3\3\3")
-        buf.write("\3\3\3\3\3\3\3\3\3\5\3,\n\3\3\3\3\3\3\3\3\3\3\3\3\3\7")
-        buf.write("\3\64\n\3\f\3\16\3\67\13\3\3\4\3\4\5\4;\n\4\3\5\3\5\3")
-        buf.write("\5\5\5@\n\5\3\5\3\5\7\5D\n\5\f\5\16\5G\13\5\3\6\3\6\3")
-        buf.write("\6\3\6\3\6\3\6\5\6O\n\6\3\7\3\7\3\7\3\7\5\7U\n\7\3\b\3")
-        buf.write("\b\3\b\3\b\3\b\3\b\3\b\5\b^\n\b\3\t\3\t\3\t\3\t\3\t\3")
-        buf.write("\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t")
-        buf.write("\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3")
-        buf.write("\t\3\t\5\t\u0082\n\t\3\n\3\n\5\n\u0086\n\n\3\13\3\13\5")
-        buf.write("\13\u008a\n\13\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f")
-        buf.write("\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3\f\3")
-        buf.write("\f\3\f\3\f\3\f\5\f\u00a7\n\f\3\r\3\r\3\16\3\16\3\17\3")
-        buf.write("\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17")
-        buf.write("\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17\3\17")
-        buf.write("\3\17\3\17\3\17\3\17\3\17\5\17\u00c9\n\17\3\20\3\20\3")
-        buf.write("\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20")
-        buf.write("\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20\3\20")
-        buf.write("\3\20\3\20\3\20\3\20\3\20\3\20\3\20\5\20\u00ea\n\20\3")
-        buf.write("\21\3\21\3\21\2\4\4\b\22\2\4\6\b\n\f\16\20\22\24\26\30")
-        buf.write("\32\34\36 \2\5\3\2\13\f\3\2IJ\3\2HK\2\u0133\2\"\3\2\2")
-        buf.write("\2\4+\3\2\2\2\6:\3\2\2\2\b?\3\2\2\2\nN\3\2\2\2\fT\3\2")
-        buf.write("\2\2\16]\3\2\2\2\20\u0081\3\2\2\2\22\u0085\3\2\2\2\24")
-        buf.write("\u0089\3\2\2\2\26\u00a6\3\2\2\2\30\u00a8\3\2\2\2\32\u00aa")
-        buf.write("\3\2\2\2\34\u00c8\3\2\2\2\36\u00e9\3\2\2\2 \u00eb\3\2")
-        buf.write("\2\2\"#\5\4\3\2#$\7\2\2\3$\3\3\2\2\2%&\b\3\1\2&,\5\6\4")
-        buf.write("\2\'(\7\3\2\2()\5\4\3\2)*\7\4\2\2*,\3\2\2\2+%\3\2\2\2")
-        buf.write("+\'\3\2\2\2,\65\3\2\2\2-.\f\4\2\2./\7\5\2\2/\64\5\4\3")
-        buf.write("\5\60\61\f\3\2\2\61\62\7\6\2\2\62\64\5\4\3\4\63-\3\2\2")
-        buf.write("\2\63\60\3\2\2\2\64\67\3\2\2\2\65\63\3\2\2\2\65\66\3\2")
-        buf.write("\2\2\66\5\3\2\2\2\67\65\3\2\2\28;\5\16\b\29;\5\b\5\2:")
-        buf.write("8\3\2\2\2:9\3\2\2\2;\7\3\2\2\2<=\b\5\1\2=@\5\n\6\2>@\7")
-        buf.write("M\2\2?<\3\2\2\2?>\3\2\2\2@E\3\2\2\2AB\f\3\2\2BD\5\n\6")
-        buf.write("\2CA\3\2\2\2DG\3\2\2\2EC\3\2\2\2EF\3\2\2\2F\t\3\2\2\2")
-        buf.write("GE\3\2\2\2HI\5\f\7\2IJ\5 \21\2JO\3\2\2\2KL\5 \21\2LM\5")
-        buf.write("\f\7\2MO\3\2\2\2NH\3\2\2\2NK\3\2\2\2O\13\3\2\2\2PU\7O")
-        buf.write("\2\2QU\7P\2\2RU\7Q\2\2SU\7R\2\2TP\3\2\2\2TQ\3\2\2\2TR")
-        buf.write("\3\2\2\2TS\3\2\2\2U\r\3\2\2\2V^\5\20\t\2W^\5\26\f\2XY")
-        buf.write("\5\20\t\2YZ\7N\2\2Z[\5\26\f\2[^\3\2\2\2\\^\7L\2\2]V\3")
-        buf.write("\2\2\2]W\3\2\2\2]X\3\2\2\2]\\\3\2\2\2^\17\3\2\2\2_`\7")
-        buf.write("\7\2\2`\u0082\5 \21\2a\u0082\5\34\17\2bc\7\7\2\2c\u0082")
-        buf.write("\5\34\17\2de\5\32\16\2ef\7\b\2\2f\u0082\3\2\2\2gh\5\32")
-        buf.write("\16\2hi\7\b\2\2ij\5\22\n\2j\u0082\3\2\2\2kl\7\7\2\2lm")
-        buf.write("\5\32\16\2mn\7\b\2\2no\5\22\n\2o\u0082\3\2\2\2pq\5\32")
-        buf.write("\16\2qr\7\b\2\2rs\5\22\n\2st\7\b\2\2tu\5\24\13\2u\u0082")
-        buf.write("\3\2\2\2vw\7\t\2\2wx\5 \21\2xy\7\b\2\2yz\5\34\17\2z\u0082")
-        buf.write("\3\2\2\2{|\7\7\2\2|}\7\t\2\2}~\5 \21\2~\177\7\b\2\2\177")
-        buf.write("\u0080\5\34\17\2\u0080\u0082\3\2\2\2\u0081_\3\2\2\2\u0081")
-        buf.write("a\3\2\2\2\u0081b\3\2\2\2\u0081d\3\2\2\2\u0081g\3\2\2\2")
-        buf.write("\u0081k\3\2\2\2\u0081p\3\2\2\2\u0081v\3\2\2\2\u0081{\3")
-        buf.write("\2\2\2\u0082\21\3\2\2\2\u0083\u0086\5\32\16\2\u0084\u0086")
-        buf.write("\5\36\20\2\u0085\u0083\3\2\2\2\u0085\u0084\3\2\2\2\u0086")
-        buf.write("\23\3\2\2\2\u0087\u008a\5\32\16\2\u0088\u008a\7H\2\2\u0089")
-        buf.write("\u0087\3\2\2\2\u0089\u0088\3\2\2\2\u008a\25\3\2\2\2\u008b")
-        buf.write("\u00a7\7H\2\2\u008c\u00a7\5\32\16\2\u008d\u008e\5\32\16")
-        buf.write("\2\u008e\u008f\5\30\r\2\u008f\u00a7\3\2\2\2\u0090\u0091")
-        buf.write("\5\32\16\2\u0091\u0092\7\n\2\2\u0092\u0093\5\32\16\2\u0093")
-        buf.write("\u0094\5\30\r\2\u0094\u00a7\3\2\2\2\u0095\u0096\5\32\16")
-        buf.write("\2\u0096\u0097\7\n\2\2\u0097\u0098\5\32\16\2\u0098\u0099")
-        buf.write("\7\n\2\2\u0099\u009a\5\32\16\2\u009a\u009b\5\30\r\2\u009b")
-        buf.write("\u00a7\3\2\2\2\u009c\u009d\5\32\16\2\u009d\u009e\7\n\2")
-        buf.write("\2\u009e\u009f\5\32\16\2\u009f\u00a7\3\2\2\2\u00a0\u00a1")
-        buf.write("\5\32\16\2\u00a1\u00a2\7\n\2\2\u00a2\u00a3\5\32\16\2\u00a3")
-        buf.write("\u00a4\7\n\2\2\u00a4\u00a5\5\32\16\2\u00a5\u00a7\3\2\2")
-        buf.write("\2\u00a6\u008b\3\2\2\2\u00a6\u008c\3\2\2\2\u00a6\u008d")
-        buf.write("\3\2\2\2\u00a6\u0090\3\2\2\2\u00a6\u0095\3\2\2\2\u00a6")
-        buf.write("\u009c\3\2\2\2\u00a6\u00a0\3\2\2\2\u00a7\27\3\2\2\2\u00a8")
-        buf.write("\u00a9\t\2\2\2\u00a9\31\3\2\2\2\u00aa\u00ab\t\3\2\2\u00ab")
-        buf.write("\33\3\2\2\2\u00ac\u00c9\7\r\2\2\u00ad\u00c9\7\16\2\2\u00ae")
-        buf.write("\u00c9\7\17\2\2\u00af\u00c9\7\20\2\2\u00b0\u00c9\7\21")
-        buf.write("\2\2\u00b1\u00c9\7\22\2\2\u00b2\u00c9\7\23\2\2\u00b3\u00c9")
-        buf.write("\7\24\2\2\u00b4\u00c9\7\25\2\2\u00b5\u00c9\7\26\2\2\u00b6")
-        buf.write("\u00c9\7\27\2\2\u00b7\u00c9\7\30\2\2\u00b8\u00c9\7\31")
-        buf.write("\2\2\u00b9\u00c9\7\32\2\2\u00ba\u00c9\7\33\2\2\u00bb\u00c9")
-        buf.write("\7\34\2\2\u00bc\u00c9\7\35\2\2\u00bd\u00c9\7\36\2\2\u00be")
-        buf.write("\u00c9\7\37\2\2\u00bf\u00c9\7 \2\2\u00c0\u00c9\7!\2\2")
-        buf.write("\u00c1\u00c9\7\"\2\2\u00c2\u00c9\7#\2\2\u00c3\u00c9\7")
-        buf.write("$\2\2\u00c4\u00c9\7%\2\2\u00c5\u00c9\7&\2\2\u00c6\u00c9")
-        buf.write("\7\'\2\2\u00c7\u00c9\7(\2\2\u00c8\u00ac\3\2\2\2\u00c8")
-        buf.write("\u00ad\3\2\2\2\u00c8\u00ae\3\2\2\2\u00c8\u00af\3\2\2\2")
-        buf.write("\u00c8\u00b0\3\2\2\2\u00c8\u00b1\3\2\2\2\u00c8\u00b2\3")
-        buf.write("\2\2\2\u00c8\u00b3\3\2\2\2\u00c8\u00b4\3\2\2\2\u00c8\u00b5")
-        buf.write("\3\2\2\2\u00c8\u00b6\3\2\2\2\u00c8\u00b7\3\2\2\2\u00c8")
-        buf.write("\u00b8\3\2\2\2\u00c8\u00b9\3\2\2\2\u00c8\u00ba\3\2\2\2")
-        buf.write("\u00c8\u00bb\3\2\2\2\u00c8\u00bc\3\2\2\2\u00c8\u00bd\3")
-        buf.write("\2\2\2\u00c8\u00be\3\2\2\2\u00c8\u00bf\3\2\2\2\u00c8\u00c0")
-        buf.write("\3\2\2\2\u00c8\u00c1\3\2\2\2\u00c8\u00c2\3\2\2\2\u00c8")
-        buf.write("\u00c3\3\2\2\2\u00c8\u00c4\3\2\2\2\u00c8\u00c5\3\2\2\2")
-        buf.write("\u00c8\u00c6\3\2\2\2\u00c8\u00c7\3\2\2\2\u00c9\35\3\2")
-        buf.write("\2\2\u00ca\u00ea\7)\2\2\u00cb\u00ea\7*\2\2\u00cc\u00ea")
-        buf.write("\7+\2\2\u00cd\u00ea\7,\2\2\u00ce\u00ea\7-\2\2\u00cf\u00ea")
-        buf.write("\7.\2\2\u00d0\u00ea\7/\2\2\u00d1\u00ea\7\60\2\2\u00d2")
-        buf.write("\u00ea\7\61\2\2\u00d3\u00ea\7\62\2\2\u00d4\u00ea\7\63")
-        buf.write("\2\2\u00d5\u00ea\7\64\2\2\u00d6\u00ea\7\65\2\2\u00d7\u00ea")
-        buf.write("\7\66\2\2\u00d8\u00ea\7\67\2\2\u00d9\u00ea\78\2\2\u00da")
-        buf.write("\u00ea\79\2\2\u00db\u00ea\7:\2\2\u00dc\u00ea\7;\2\2\u00dd")
-        buf.write("\u00ea\7<\2\2\u00de\u00ea\7=\2\2\u00df\u00ea\7>\2\2\u00e0")
-        buf.write("\u00ea\7?\2\2\u00e1\u00ea\7@\2\2\u00e2\u00ea\7A\2\2\u00e3")
-        buf.write("\u00ea\7B\2\2\u00e4\u00ea\7C\2\2\u00e5\u00ea\7D\2\2\u00e6")
-        buf.write("\u00ea\7E\2\2\u00e7\u00ea\7F\2\2\u00e8\u00ea\7G\2\2\u00e9")
-        buf.write("\u00ca\3\2\2\2\u00e9\u00cb\3\2\2\2\u00e9\u00cc\3\2\2\2")
-        buf.write("\u00e9\u00cd\3\2\2\2\u00e9\u00ce\3\2\2\2\u00e9\u00cf\3")
-        buf.write("\2\2\2\u00e9\u00d0\3\2\2\2\u00e9\u00d1\3\2\2\2\u00e9\u00d2")
-        buf.write("\3\2\2\2\u00e9\u00d3\3\2\2\2\u00e9\u00d4\3\2\2\2\u00e9")
-        buf.write("\u00d5\3\2\2\2\u00e9\u00d6\3\2\2\2\u00e9\u00d7\3\2\2\2")
-        buf.write("\u00e9\u00d8\3\2\2\2\u00e9\u00d9\3\2\2\2\u00e9\u00da\3")
-        buf.write("\2\2\2\u00e9\u00db\3\2\2\2\u00e9\u00dc\3\2\2\2\u00e9\u00dd")
-        buf.write("\3\2\2\2\u00e9\u00de\3\2\2\2\u00e9\u00df\3\2\2\2\u00e9")
-        buf.write("\u00e0\3\2\2\2\u00e9\u00e1\3\2\2\2\u00e9\u00e2\3\2\2\2")
-        buf.write("\u00e9\u00e3\3\2\2\2\u00e9\u00e4\3\2\2\2\u00e9\u00e5\3")
-        buf.write("\2\2\2\u00e9\u00e6\3\2\2\2\u00e9\u00e7\3\2\2\2\u00e9\u00e8")
-        buf.write("\3\2\2\2\u00ea\37\3\2\2\2\u00eb\u00ec\t\4\2\2\u00ec!\3")
-        buf.write("\2\2\2\21+\63\65:?ENT]\u0081\u0085\u0089\u00a6\u00c8\u00e9")
-        return buf.getvalue()
-
+    return [
+        4,1,82,236,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
+        2,14,7,14,2,15,7,15,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,3,1,42,8,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,5,1,50,8,1,10,1,12,1,53,9,1,1,2,1,2,3,
+        2,57,8,2,1,3,1,3,1,3,3,3,62,8,3,1,3,1,3,5,3,66,8,3,10,3,12,3,69,
+        9,3,1,4,1,4,1,4,1,4,1,4,1,4,3,4,77,8,4,1,5,1,5,1,5,1,5,3,5,83,8,
+        5,1,6,1,6,1,6,1,6,1,6,1,6,1,6,3,6,92,8,6,1,7,1,7,1,7,1,7,1,7,1,7,
+        1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,
+        1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,1,7,3,7,128,8,7,1,8,
+        1,8,3,8,132,8,8,1,9,1,9,3,9,136,8,9,1,10,1,10,1,10,1,10,1,10,1,10,
+        1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,
+        1,10,1,10,1,10,1,10,1,10,1,10,1,10,1,10,3,10,165,8,10,1,11,1,11,
+        1,12,1,12,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,
+        1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,1,13,
+        1,13,1,13,1,13,1,13,3,13,199,8,13,1,14,1,14,1,14,1,14,1,14,1,14,
+        1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,
+        1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,1,14,3,14,
+        232,8,14,1,15,1,15,1,15,0,2,2,6,16,0,2,4,6,8,10,12,14,16,18,20,22,
+        24,26,28,30,0,3,1,0,9,10,1,0,71,72,1,0,70,73,305,0,32,1,0,0,0,2,
+        41,1,0,0,0,4,56,1,0,0,0,6,61,1,0,0,0,8,76,1,0,0,0,10,82,1,0,0,0,
+        12,91,1,0,0,0,14,127,1,0,0,0,16,131,1,0,0,0,18,135,1,0,0,0,20,164,
+        1,0,0,0,22,166,1,0,0,0,24,168,1,0,0,0,26,198,1,0,0,0,28,231,1,0,
+        0,0,30,233,1,0,0,0,32,33,3,2,1,0,33,34,5,0,0,1,34,1,1,0,0,0,35,36,
+        6,1,-1,0,36,42,3,4,2,0,37,38,5,1,0,0,38,39,3,2,1,0,39,40,5,2,0,0,
+        40,42,1,0,0,0,41,35,1,0,0,0,41,37,1,0,0,0,42,51,1,0,0,0,43,44,10,
+        2,0,0,44,45,5,3,0,0,45,50,3,2,1,3,46,47,10,1,0,0,47,48,5,4,0,0,48,
+        50,3,2,1,2,49,43,1,0,0,0,49,46,1,0,0,0,50,53,1,0,0,0,51,49,1,0,0,
+        0,51,52,1,0,0,0,52,3,1,0,0,0,53,51,1,0,0,0,54,57,3,12,6,0,55,57,
+        3,6,3,0,56,54,1,0,0,0,56,55,1,0,0,0,57,5,1,0,0,0,58,59,6,3,-1,0,
+        59,62,3,8,4,0,60,62,5,75,0,0,61,58,1,0,0,0,61,60,1,0,0,0,62,67,1,
+        0,0,0,63,64,10,1,0,0,64,66,3,8,4,0,65,63,1,0,0,0,66,69,1,0,0,0,67,
+        65,1,0,0,0,67,68,1,0,0,0,68,7,1,0,0,0,69,67,1,0,0,0,70,71,3,10,5,
+        0,71,72,3,30,15,0,72,77,1,0,0,0,73,74,3,30,15,0,74,75,3,10,5,0,75,
+        77,1,0,0,0,76,70,1,0,0,0,76,73,1,0,0,0,77,9,1,0,0,0,78,83,5,77,0,
+        0,79,83,5,78,0,0,80,83,5,79,0,0,81,83,5,80,0,0,82,78,1,0,0,0,82,
+        79,1,0,0,0,82,80,1,0,0,0,82,81,1,0,0,0,83,11,1,0,0,0,84,92,3,14,
+        7,0,85,92,3,20,10,0,86,87,3,14,7,0,87,88,5,76,0,0,88,89,3,20,10,
+        0,89,92,1,0,0,0,90,92,5,74,0,0,91,84,1,0,0,0,91,85,1,0,0,0,91,86,
+        1,0,0,0,91,90,1,0,0,0,92,13,1,0,0,0,93,94,5,5,0,0,94,128,3,30,15,
+        0,95,128,3,26,13,0,96,97,5,5,0,0,97,128,3,26,13,0,98,99,3,24,12,
+        0,99,100,5,6,0,0,100,128,1,0,0,0,101,102,3,24,12,0,102,103,5,6,0,
+        0,103,104,3,16,8,0,104,128,1,0,0,0,105,106,5,5,0,0,106,107,3,24,
+        12,0,107,108,5,6,0,0,108,109,3,16,8,0,109,128,1,0,0,0,110,111,3,
+        24,12,0,111,112,5,6,0,0,112,113,3,16,8,0,113,114,5,6,0,0,114,115,
+        3,18,9,0,115,128,1,0,0,0,116,117,5,7,0,0,117,118,3,30,15,0,118,119,
+        5,6,0,0,119,120,3,26,13,0,120,128,1,0,0,0,121,122,5,5,0,0,122,123,
+        5,7,0,0,123,124,3,30,15,0,124,125,5,6,0,0,125,126,3,26,13,0,126,
+        128,1,0,0,0,127,93,1,0,0,0,127,95,1,0,0,0,127,96,1,0,0,0,127,98,
+        1,0,0,0,127,101,1,0,0,0,127,105,1,0,0,0,127,110,1,0,0,0,127,116,
+        1,0,0,0,127,121,1,0,0,0,128,15,1,0,0,0,129,132,3,24,12,0,130,132,
+        3,28,14,0,131,129,1,0,0,0,131,130,1,0,0,0,132,17,1,0,0,0,133,136,
+        3,24,12,0,134,136,5,70,0,0,135,133,1,0,0,0,135,134,1,0,0,0,136,19,
+        1,0,0,0,137,165,5,70,0,0,138,165,3,24,12,0,139,140,3,24,12,0,140,
+        141,3,22,11,0,141,165,1,0,0,0,142,143,3,24,12,0,143,144,5,8,0,0,
+        144,145,3,24,12,0,145,146,3,22,11,0,146,165,1,0,0,0,147,148,3,24,
+        12,0,148,149,5,8,0,0,149,150,3,24,12,0,150,151,5,8,0,0,151,152,3,
+        24,12,0,152,153,3,22,11,0,153,165,1,0,0,0,154,155,3,24,12,0,155,
+        156,5,8,0,0,156,157,3,24,12,0,157,165,1,0,0,0,158,159,3,24,12,0,
+        159,160,5,8,0,0,160,161,3,24,12,0,161,162,5,8,0,0,162,163,3,24,12,
+        0,163,165,1,0,0,0,164,137,1,0,0,0,164,138,1,0,0,0,164,139,1,0,0,
+        0,164,142,1,0,0,0,164,147,1,0,0,0,164,154,1,0,0,0,164,158,1,0,0,
+        0,165,21,1,0,0,0,166,167,7,0,0,0,167,23,1,0,0,0,168,169,7,1,0,0,
+        169,25,1,0,0,0,170,199,5,11,0,0,171,199,5,12,0,0,172,199,5,13,0,
+        0,173,199,5,14,0,0,174,199,5,15,0,0,175,199,5,16,0,0,176,199,5,17,
+        0,0,177,199,5,18,0,0,178,199,5,19,0,0,179,199,5,20,0,0,180,199,5,
+        21,0,0,181,199,5,22,0,0,182,199,5,23,0,0,183,199,5,24,0,0,184,199,
+        5,25,0,0,185,199,5,26,0,0,186,199,5,27,0,0,187,199,5,28,0,0,188,
+        199,5,29,0,0,189,199,5,30,0,0,190,199,5,31,0,0,191,199,5,32,0,0,
+        192,199,5,33,0,0,193,199,5,34,0,0,194,199,5,35,0,0,195,199,5,36,
+        0,0,196,199,5,37,0,0,197,199,5,38,0,0,198,170,1,0,0,0,198,171,1,
+        0,0,0,198,172,1,0,0,0,198,173,1,0,0,0,198,174,1,0,0,0,198,175,1,
+        0,0,0,198,176,1,0,0,0,198,177,1,0,0,0,198,178,1,0,0,0,198,179,1,
+        0,0,0,198,180,1,0,0,0,198,181,1,0,0,0,198,182,1,0,0,0,198,183,1,
+        0,0,0,198,184,1,0,0,0,198,185,1,0,0,0,198,186,1,0,0,0,198,187,1,
+        0,0,0,198,188,1,0,0,0,198,189,1,0,0,0,198,190,1,0,0,0,198,191,1,
+        0,0,0,198,192,1,0,0,0,198,193,1,0,0,0,198,194,1,0,0,0,198,195,1,
+        0,0,0,198,196,1,0,0,0,198,197,1,0,0,0,199,27,1,0,0,0,200,232,5,39,
+        0,0,201,232,5,40,0,0,202,232,5,41,0,0,203,232,5,42,0,0,204,232,5,
+        43,0,0,205,232,5,44,0,0,206,232,5,45,0,0,207,232,5,46,0,0,208,232,
+        5,47,0,0,209,232,5,48,0,0,210,232,5,49,0,0,211,232,5,50,0,0,212,
+        232,5,51,0,0,213,232,5,52,0,0,214,232,5,53,0,0,215,232,5,54,0,0,
+        216,232,5,55,0,0,217,232,5,56,0,0,218,232,5,57,0,0,219,232,5,58,
+        0,0,220,232,5,59,0,0,221,232,5,60,0,0,222,232,5,61,0,0,223,232,5,
+        62,0,0,224,232,5,63,0,0,225,232,5,64,0,0,226,232,5,65,0,0,227,232,
+        5,66,0,0,228,232,5,67,0,0,229,232,5,68,0,0,230,232,5,69,0,0,231,
+        200,1,0,0,0,231,201,1,0,0,0,231,202,1,0,0,0,231,203,1,0,0,0,231,
+        204,1,0,0,0,231,205,1,0,0,0,231,206,1,0,0,0,231,207,1,0,0,0,231,
+        208,1,0,0,0,231,209,1,0,0,0,231,210,1,0,0,0,231,211,1,0,0,0,231,
+        212,1,0,0,0,231,213,1,0,0,0,231,214,1,0,0,0,231,215,1,0,0,0,231,
+        216,1,0,0,0,231,217,1,0,0,0,231,218,1,0,0,0,231,219,1,0,0,0,231,
+        220,1,0,0,0,231,221,1,0,0,0,231,222,1,0,0,0,231,223,1,0,0,0,231,
+        224,1,0,0,0,231,225,1,0,0,0,231,226,1,0,0,0,231,227,1,0,0,0,231,
+        228,1,0,0,0,231,229,1,0,0,0,231,230,1,0,0,0,232,29,1,0,0,0,233,234,
+        7,2,0,0,234,31,1,0,0,0,15,41,49,51,56,61,67,76,82,91,127,131,135,
+        164,198,231
+    ]
 
 class dtmath_grammarParser ( Parser ):
 
@@ -144,9 +122,9 @@ class dtmath_grammarParser ( Parser ):
                      "'mandag'", "'tue'", "'tir'", "'tuesday'", "'tirsdag'", 
                      "'wed'", "'ons'", "'wednesday'", "'onsdag'", "'thu'", 
                      "'tor'", "'thursday'", "'torsdag'", "'fri'", "'fre'", 
-                     "'friday'", "'fredag'", "'sat'", "'l\u00F8r'", "'saturday'", 
-                     "'l\u00F8rdag'", "'sun'", "'s\u00F8n'", "'sunday'", 
-                     "'s\u00F8ndag'", "'jan'", "'january'", "'januar'", 
+                     "'friday'", "'fredag'", "'sat'", "'l\\u00F8r'", "'saturday'", 
+                     "'l\\u00F8rdag'", "'sun'", "'s\\u00F8n'", "'sunday'", 
+                     "'s\\u00F8ndag'", "'jan'", "'january'", "'januar'", 
                      "'feb'", "'february'", "'februar'", "'mar'", "'march'", 
                      "'marts'", "'apr'", "'april'", "'may'", "'maj'", "'jun'", 
                      "'june'", "'juni'", "'jul'", "'july'", "'juli'", "'aug'", 
@@ -283,7 +261,7 @@ class dtmath_grammarParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.9.1")
+        self.checkVersion("4.12.0")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -478,7 +456,7 @@ class dtmath_grammarParser ( Parser ):
             self.state = 41
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.T__4, dtmath_grammarParser.T__6, dtmath_grammarParser.T__10, dtmath_grammarParser.T__11, dtmath_grammarParser.T__12, dtmath_grammarParser.T__13, dtmath_grammarParser.T__14, dtmath_grammarParser.T__15, dtmath_grammarParser.T__16, dtmath_grammarParser.T__17, dtmath_grammarParser.T__18, dtmath_grammarParser.T__19, dtmath_grammarParser.T__20, dtmath_grammarParser.T__21, dtmath_grammarParser.T__22, dtmath_grammarParser.T__23, dtmath_grammarParser.T__24, dtmath_grammarParser.T__25, dtmath_grammarParser.T__26, dtmath_grammarParser.T__27, dtmath_grammarParser.T__28, dtmath_grammarParser.T__29, dtmath_grammarParser.T__30, dtmath_grammarParser.T__31, dtmath_grammarParser.T__32, dtmath_grammarParser.T__33, dtmath_grammarParser.T__34, dtmath_grammarParser.T__35, dtmath_grammarParser.T__36, dtmath_grammarParser.T__37, dtmath_grammarParser.QUAD, dtmath_grammarParser.PAIR, dtmath_grammarParser.SINGLE, dtmath_grammarParser.BIGNUMBER, dtmath_grammarParser.NOW, dtmath_grammarParser.NOW_TIME, dtmath_grammarParser.SECOND, dtmath_grammarParser.MINUTE, dtmath_grammarParser.HOUR, dtmath_grammarParser.DAY]:
+            if token in [5, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 70, 71, 72, 73, 74, 75, 77, 78, 79, 80]:
                 localctx = dtmath_grammarParser.TimeOperationContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
@@ -486,7 +464,7 @@ class dtmath_grammarParser ( Parser ):
                 self.state = 36
                 self.time()
                 pass
-            elif token in [dtmath_grammarParser.T__0]:
+            elif token in [1]:
                 localctx = dtmath_grammarParser.ParenthesisOperationContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
@@ -758,7 +736,7 @@ class dtmath_grammarParser ( Parser ):
             self.state = 61
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.QUAD, dtmath_grammarParser.PAIR, dtmath_grammarParser.SINGLE, dtmath_grammarParser.BIGNUMBER, dtmath_grammarParser.SECOND, dtmath_grammarParser.MINUTE, dtmath_grammarParser.HOUR, dtmath_grammarParser.DAY]:
+            if token in [70, 71, 72, 73, 77, 78, 79, 80]:
                 localctx = dtmath_grammarParser.DeltaTimeSingleContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
@@ -766,7 +744,7 @@ class dtmath_grammarParser ( Parser ):
                 self.state = 59
                 self.delta_time_unit()
                 pass
-            elif token in [dtmath_grammarParser.NOW_TIME]:
+            elif token in [75]:
                 localctx = dtmath_grammarParser.DeltaTimeNowContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
@@ -888,7 +866,7 @@ class dtmath_grammarParser ( Parser ):
             self.state = 76
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.SECOND, dtmath_grammarParser.MINUTE, dtmath_grammarParser.HOUR, dtmath_grammarParser.DAY]:
+            if token in [77, 78, 79, 80]:
                 localctx = dtmath_grammarParser.DeltaUnitFirstContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 70
@@ -896,7 +874,7 @@ class dtmath_grammarParser ( Parser ):
                 self.state = 71
                 self.any_number()
                 pass
-            elif token in [dtmath_grammarParser.QUAD, dtmath_grammarParser.PAIR, dtmath_grammarParser.SINGLE, dtmath_grammarParser.BIGNUMBER]:
+            elif token in [70, 71, 72, 73]:
                 localctx = dtmath_grammarParser.DeltaValueFirstContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 73
@@ -1038,25 +1016,25 @@ class dtmath_grammarParser ( Parser ):
             self.state = 82
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.SECOND]:
+            if token in [77]:
                 localctx = dtmath_grammarParser.DeltaSecondContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 78
                 self.match(dtmath_grammarParser.SECOND)
                 pass
-            elif token in [dtmath_grammarParser.MINUTE]:
+            elif token in [78]:
                 localctx = dtmath_grammarParser.DeltaMinuteContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 79
                 self.match(dtmath_grammarParser.MINUTE)
                 pass
-            elif token in [dtmath_grammarParser.HOUR]:
+            elif token in [79]:
                 localctx = dtmath_grammarParser.DeltaHourContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
                 self.state = 80
                 self.match(dtmath_grammarParser.HOUR)
                 pass
-            elif token in [dtmath_grammarParser.DAY]:
+            elif token in [80]:
                 localctx = dtmath_grammarParser.DeltaDayContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
                 self.state = 81
@@ -1702,13 +1680,13 @@ class dtmath_grammarParser ( Parser ):
             self.state = 131
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.PAIR, dtmath_grammarParser.SINGLE]:
+            if token in [71, 72]:
                 localctx = dtmath_grammarParser.NumericalMonthContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 129
                 self.duo()
                 pass
-            elif token in [dtmath_grammarParser.T__38, dtmath_grammarParser.T__39, dtmath_grammarParser.T__40, dtmath_grammarParser.T__41, dtmath_grammarParser.T__42, dtmath_grammarParser.T__43, dtmath_grammarParser.T__44, dtmath_grammarParser.T__45, dtmath_grammarParser.T__46, dtmath_grammarParser.T__47, dtmath_grammarParser.T__48, dtmath_grammarParser.T__49, dtmath_grammarParser.T__50, dtmath_grammarParser.T__51, dtmath_grammarParser.T__52, dtmath_grammarParser.T__53, dtmath_grammarParser.T__54, dtmath_grammarParser.T__55, dtmath_grammarParser.T__56, dtmath_grammarParser.T__57, dtmath_grammarParser.T__58, dtmath_grammarParser.T__59, dtmath_grammarParser.T__60, dtmath_grammarParser.T__61, dtmath_grammarParser.T__62, dtmath_grammarParser.T__63, dtmath_grammarParser.T__64, dtmath_grammarParser.T__65, dtmath_grammarParser.T__66, dtmath_grammarParser.T__67, dtmath_grammarParser.T__68]:
+            elif token in [39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69]:
                 localctx = dtmath_grammarParser.StringMonthContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 130
@@ -1801,13 +1779,13 @@ class dtmath_grammarParser ( Parser ):
             self.state = 135
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.PAIR, dtmath_grammarParser.SINGLE]:
+            if token in [71, 72]:
                 localctx = dtmath_grammarParser.CenturyContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 133
                 self.duo()
                 pass
-            elif token in [dtmath_grammarParser.QUAD]:
+            elif token in [70]:
                 localctx = dtmath_grammarParser.MillenniumContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 134
@@ -2172,7 +2150,7 @@ class dtmath_grammarParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 166
             _la = self._input.LA(1)
-            if not(_la==dtmath_grammarParser.T__8 or _la==dtmath_grammarParser.T__9):
+            if not(_la==9 or _la==10):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2228,7 +2206,7 @@ class dtmath_grammarParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 168
             _la = self._input.LA(1)
-            if not(_la==dtmath_grammarParser.PAIR or _la==dtmath_grammarParser.SINGLE):
+            if not(_la==71 or _la==72):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -2422,169 +2400,169 @@ class dtmath_grammarParser ( Parser ):
             self.state = 198
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.T__10]:
+            if token in [11]:
                 localctx = dtmath_grammarParser.MondayContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 170
                 self.match(dtmath_grammarParser.T__10)
                 pass
-            elif token in [dtmath_grammarParser.T__11]:
+            elif token in [12]:
                 localctx = dtmath_grammarParser.MondayContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 171
                 self.match(dtmath_grammarParser.T__11)
                 pass
-            elif token in [dtmath_grammarParser.T__12]:
+            elif token in [13]:
                 localctx = dtmath_grammarParser.MondayContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
                 self.state = 172
                 self.match(dtmath_grammarParser.T__12)
                 pass
-            elif token in [dtmath_grammarParser.T__13]:
+            elif token in [14]:
                 localctx = dtmath_grammarParser.MondayContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
                 self.state = 173
                 self.match(dtmath_grammarParser.T__13)
                 pass
-            elif token in [dtmath_grammarParser.T__14]:
+            elif token in [15]:
                 localctx = dtmath_grammarParser.TuesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 174
                 self.match(dtmath_grammarParser.T__14)
                 pass
-            elif token in [dtmath_grammarParser.T__15]:
+            elif token in [16]:
                 localctx = dtmath_grammarParser.TuesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 6)
                 self.state = 175
                 self.match(dtmath_grammarParser.T__15)
                 pass
-            elif token in [dtmath_grammarParser.T__16]:
+            elif token in [17]:
                 localctx = dtmath_grammarParser.TuesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 7)
                 self.state = 176
                 self.match(dtmath_grammarParser.T__16)
                 pass
-            elif token in [dtmath_grammarParser.T__17]:
+            elif token in [18]:
                 localctx = dtmath_grammarParser.TuesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 8)
                 self.state = 177
                 self.match(dtmath_grammarParser.T__17)
                 pass
-            elif token in [dtmath_grammarParser.T__18]:
+            elif token in [19]:
                 localctx = dtmath_grammarParser.WednesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 9)
                 self.state = 178
                 self.match(dtmath_grammarParser.T__18)
                 pass
-            elif token in [dtmath_grammarParser.T__19]:
+            elif token in [20]:
                 localctx = dtmath_grammarParser.WednesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 10)
                 self.state = 179
                 self.match(dtmath_grammarParser.T__19)
                 pass
-            elif token in [dtmath_grammarParser.T__20]:
+            elif token in [21]:
                 localctx = dtmath_grammarParser.WednesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 11)
                 self.state = 180
                 self.match(dtmath_grammarParser.T__20)
                 pass
-            elif token in [dtmath_grammarParser.T__21]:
+            elif token in [22]:
                 localctx = dtmath_grammarParser.WednesdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 12)
                 self.state = 181
                 self.match(dtmath_grammarParser.T__21)
                 pass
-            elif token in [dtmath_grammarParser.T__22]:
+            elif token in [23]:
                 localctx = dtmath_grammarParser.ThursdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 13)
                 self.state = 182
                 self.match(dtmath_grammarParser.T__22)
                 pass
-            elif token in [dtmath_grammarParser.T__23]:
+            elif token in [24]:
                 localctx = dtmath_grammarParser.ThursdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 14)
                 self.state = 183
                 self.match(dtmath_grammarParser.T__23)
                 pass
-            elif token in [dtmath_grammarParser.T__24]:
+            elif token in [25]:
                 localctx = dtmath_grammarParser.ThursdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 15)
                 self.state = 184
                 self.match(dtmath_grammarParser.T__24)
                 pass
-            elif token in [dtmath_grammarParser.T__25]:
+            elif token in [26]:
                 localctx = dtmath_grammarParser.ThursdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 16)
                 self.state = 185
                 self.match(dtmath_grammarParser.T__25)
                 pass
-            elif token in [dtmath_grammarParser.T__26]:
+            elif token in [27]:
                 localctx = dtmath_grammarParser.FridayContext(self, localctx)
                 self.enterOuterAlt(localctx, 17)
                 self.state = 186
                 self.match(dtmath_grammarParser.T__26)
                 pass
-            elif token in [dtmath_grammarParser.T__27]:
+            elif token in [28]:
                 localctx = dtmath_grammarParser.FridayContext(self, localctx)
                 self.enterOuterAlt(localctx, 18)
                 self.state = 187
                 self.match(dtmath_grammarParser.T__27)
                 pass
-            elif token in [dtmath_grammarParser.T__28]:
+            elif token in [29]:
                 localctx = dtmath_grammarParser.FridayContext(self, localctx)
                 self.enterOuterAlt(localctx, 19)
                 self.state = 188
                 self.match(dtmath_grammarParser.T__28)
                 pass
-            elif token in [dtmath_grammarParser.T__29]:
+            elif token in [30]:
                 localctx = dtmath_grammarParser.FridayContext(self, localctx)
                 self.enterOuterAlt(localctx, 20)
                 self.state = 189
                 self.match(dtmath_grammarParser.T__29)
                 pass
-            elif token in [dtmath_grammarParser.T__30]:
+            elif token in [31]:
                 localctx = dtmath_grammarParser.SaturdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 21)
                 self.state = 190
                 self.match(dtmath_grammarParser.T__30)
                 pass
-            elif token in [dtmath_grammarParser.T__31]:
+            elif token in [32]:
                 localctx = dtmath_grammarParser.SaturdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 22)
                 self.state = 191
                 self.match(dtmath_grammarParser.T__31)
                 pass
-            elif token in [dtmath_grammarParser.T__32]:
+            elif token in [33]:
                 localctx = dtmath_grammarParser.SaturdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 23)
                 self.state = 192
                 self.match(dtmath_grammarParser.T__32)
                 pass
-            elif token in [dtmath_grammarParser.T__33]:
+            elif token in [34]:
                 localctx = dtmath_grammarParser.SaturdayContext(self, localctx)
                 self.enterOuterAlt(localctx, 24)
                 self.state = 193
                 self.match(dtmath_grammarParser.T__33)
                 pass
-            elif token in [dtmath_grammarParser.T__34]:
+            elif token in [35]:
                 localctx = dtmath_grammarParser.SundayContext(self, localctx)
                 self.enterOuterAlt(localctx, 25)
                 self.state = 194
                 self.match(dtmath_grammarParser.T__34)
                 pass
-            elif token in [dtmath_grammarParser.T__35]:
+            elif token in [36]:
                 localctx = dtmath_grammarParser.SundayContext(self, localctx)
                 self.enterOuterAlt(localctx, 26)
                 self.state = 195
                 self.match(dtmath_grammarParser.T__35)
                 pass
-            elif token in [dtmath_grammarParser.T__36]:
+            elif token in [37]:
                 localctx = dtmath_grammarParser.SundayContext(self, localctx)
                 self.enterOuterAlt(localctx, 27)
                 self.state = 196
                 self.match(dtmath_grammarParser.T__36)
                 pass
-            elif token in [dtmath_grammarParser.T__37]:
+            elif token in [38]:
                 localctx = dtmath_grammarParser.SundayContext(self, localctx)
                 self.enterOuterAlt(localctx, 28)
                 self.state = 197
@@ -2892,187 +2870,187 @@ class dtmath_grammarParser ( Parser ):
             self.state = 231
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [dtmath_grammarParser.T__38]:
+            if token in [39]:
                 localctx = dtmath_grammarParser.JanuaryContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
                 self.state = 200
                 self.match(dtmath_grammarParser.T__38)
                 pass
-            elif token in [dtmath_grammarParser.T__39]:
+            elif token in [40]:
                 localctx = dtmath_grammarParser.JanuaryContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 201
                 self.match(dtmath_grammarParser.T__39)
                 pass
-            elif token in [dtmath_grammarParser.T__40]:
+            elif token in [41]:
                 localctx = dtmath_grammarParser.JanuaryContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
                 self.state = 202
                 self.match(dtmath_grammarParser.T__40)
                 pass
-            elif token in [dtmath_grammarParser.T__41]:
+            elif token in [42]:
                 localctx = dtmath_grammarParser.FebruaryContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
                 self.state = 203
                 self.match(dtmath_grammarParser.T__41)
                 pass
-            elif token in [dtmath_grammarParser.T__42]:
+            elif token in [43]:
                 localctx = dtmath_grammarParser.FebruaryContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
                 self.state = 204
                 self.match(dtmath_grammarParser.T__42)
                 pass
-            elif token in [dtmath_grammarParser.T__43]:
+            elif token in [44]:
                 localctx = dtmath_grammarParser.FebruaryContext(self, localctx)
                 self.enterOuterAlt(localctx, 6)
                 self.state = 205
                 self.match(dtmath_grammarParser.T__43)
                 pass
-            elif token in [dtmath_grammarParser.T__44]:
+            elif token in [45]:
                 localctx = dtmath_grammarParser.MarchContext(self, localctx)
                 self.enterOuterAlt(localctx, 7)
                 self.state = 206
                 self.match(dtmath_grammarParser.T__44)
                 pass
-            elif token in [dtmath_grammarParser.T__45]:
+            elif token in [46]:
                 localctx = dtmath_grammarParser.MarchContext(self, localctx)
                 self.enterOuterAlt(localctx, 8)
                 self.state = 207
                 self.match(dtmath_grammarParser.T__45)
                 pass
-            elif token in [dtmath_grammarParser.T__46]:
+            elif token in [47]:
                 localctx = dtmath_grammarParser.MarchContext(self, localctx)
                 self.enterOuterAlt(localctx, 9)
                 self.state = 208
                 self.match(dtmath_grammarParser.T__46)
                 pass
-            elif token in [dtmath_grammarParser.T__47]:
+            elif token in [48]:
                 localctx = dtmath_grammarParser.AprilContext(self, localctx)
                 self.enterOuterAlt(localctx, 10)
                 self.state = 209
                 self.match(dtmath_grammarParser.T__47)
                 pass
-            elif token in [dtmath_grammarParser.T__48]:
+            elif token in [49]:
                 localctx = dtmath_grammarParser.AprilContext(self, localctx)
                 self.enterOuterAlt(localctx, 11)
                 self.state = 210
                 self.match(dtmath_grammarParser.T__48)
                 pass
-            elif token in [dtmath_grammarParser.T__49]:
+            elif token in [50]:
                 localctx = dtmath_grammarParser.MayContext(self, localctx)
                 self.enterOuterAlt(localctx, 12)
                 self.state = 211
                 self.match(dtmath_grammarParser.T__49)
                 pass
-            elif token in [dtmath_grammarParser.T__50]:
+            elif token in [51]:
                 localctx = dtmath_grammarParser.MayContext(self, localctx)
                 self.enterOuterAlt(localctx, 13)
                 self.state = 212
                 self.match(dtmath_grammarParser.T__50)
                 pass
-            elif token in [dtmath_grammarParser.T__51]:
+            elif token in [52]:
                 localctx = dtmath_grammarParser.JuneContext(self, localctx)
                 self.enterOuterAlt(localctx, 14)
                 self.state = 213
                 self.match(dtmath_grammarParser.T__51)
                 pass
-            elif token in [dtmath_grammarParser.T__52]:
+            elif token in [53]:
                 localctx = dtmath_grammarParser.JuneContext(self, localctx)
                 self.enterOuterAlt(localctx, 15)
                 self.state = 214
                 self.match(dtmath_grammarParser.T__52)
                 pass
-            elif token in [dtmath_grammarParser.T__53]:
+            elif token in [54]:
                 localctx = dtmath_grammarParser.JuneContext(self, localctx)
                 self.enterOuterAlt(localctx, 16)
                 self.state = 215
                 self.match(dtmath_grammarParser.T__53)
                 pass
-            elif token in [dtmath_grammarParser.T__54]:
+            elif token in [55]:
                 localctx = dtmath_grammarParser.JulyContext(self, localctx)
                 self.enterOuterAlt(localctx, 17)
                 self.state = 216
                 self.match(dtmath_grammarParser.T__54)
                 pass
-            elif token in [dtmath_grammarParser.T__55]:
+            elif token in [56]:
                 localctx = dtmath_grammarParser.JulyContext(self, localctx)
                 self.enterOuterAlt(localctx, 18)
                 self.state = 217
                 self.match(dtmath_grammarParser.T__55)
                 pass
-            elif token in [dtmath_grammarParser.T__56]:
+            elif token in [57]:
                 localctx = dtmath_grammarParser.JulyContext(self, localctx)
                 self.enterOuterAlt(localctx, 19)
                 self.state = 218
                 self.match(dtmath_grammarParser.T__56)
                 pass
-            elif token in [dtmath_grammarParser.T__57]:
+            elif token in [58]:
                 localctx = dtmath_grammarParser.AugustContext(self, localctx)
                 self.enterOuterAlt(localctx, 20)
                 self.state = 219
                 self.match(dtmath_grammarParser.T__57)
                 pass
-            elif token in [dtmath_grammarParser.T__58]:
+            elif token in [59]:
                 localctx = dtmath_grammarParser.AugustContext(self, localctx)
                 self.enterOuterAlt(localctx, 21)
                 self.state = 220
                 self.match(dtmath_grammarParser.T__58)
                 pass
-            elif token in [dtmath_grammarParser.T__59]:
+            elif token in [60]:
                 localctx = dtmath_grammarParser.SeptemberContext(self, localctx)
                 self.enterOuterAlt(localctx, 22)
                 self.state = 221
                 self.match(dtmath_grammarParser.T__59)
                 pass
-            elif token in [dtmath_grammarParser.T__60]:
+            elif token in [61]:
                 localctx = dtmath_grammarParser.SeptemberContext(self, localctx)
                 self.enterOuterAlt(localctx, 23)
                 self.state = 222
                 self.match(dtmath_grammarParser.T__60)
                 pass
-            elif token in [dtmath_grammarParser.T__61]:
+            elif token in [62]:
                 localctx = dtmath_grammarParser.OctoberContext(self, localctx)
                 self.enterOuterAlt(localctx, 24)
                 self.state = 223
                 self.match(dtmath_grammarParser.T__61)
                 pass
-            elif token in [dtmath_grammarParser.T__62]:
+            elif token in [63]:
                 localctx = dtmath_grammarParser.OctoberContext(self, localctx)
                 self.enterOuterAlt(localctx, 25)
                 self.state = 224
                 self.match(dtmath_grammarParser.T__62)
                 pass
-            elif token in [dtmath_grammarParser.T__63]:
+            elif token in [64]:
                 localctx = dtmath_grammarParser.OctoberContext(self, localctx)
                 self.enterOuterAlt(localctx, 26)
                 self.state = 225
                 self.match(dtmath_grammarParser.T__63)
                 pass
-            elif token in [dtmath_grammarParser.T__64]:
+            elif token in [65]:
                 localctx = dtmath_grammarParser.OctoberContext(self, localctx)
                 self.enterOuterAlt(localctx, 27)
                 self.state = 226
                 self.match(dtmath_grammarParser.T__64)
                 pass
-            elif token in [dtmath_grammarParser.T__65]:
+            elif token in [66]:
                 localctx = dtmath_grammarParser.NovemberContext(self, localctx)
                 self.enterOuterAlt(localctx, 28)
                 self.state = 227
                 self.match(dtmath_grammarParser.T__65)
                 pass
-            elif token in [dtmath_grammarParser.T__66]:
+            elif token in [67]:
                 localctx = dtmath_grammarParser.NovemberContext(self, localctx)
                 self.enterOuterAlt(localctx, 29)
                 self.state = 228
                 self.match(dtmath_grammarParser.T__66)
                 pass
-            elif token in [dtmath_grammarParser.T__67]:
+            elif token in [68]:
                 localctx = dtmath_grammarParser.DecemberContext(self, localctx)
                 self.enterOuterAlt(localctx, 30)
                 self.state = 229
                 self.match(dtmath_grammarParser.T__67)
                 pass
-            elif token in [dtmath_grammarParser.T__68]:
+            elif token in [69]:
                 localctx = dtmath_grammarParser.DecemberContext(self, localctx)
                 self.enterOuterAlt(localctx, 31)
                 self.state = 230
@@ -3138,7 +3116,7 @@ class dtmath_grammarParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 233
             _la = self._input.LA(1)
-            if not(((((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & ((1 << (dtmath_grammarParser.QUAD - 70)) | (1 << (dtmath_grammarParser.PAIR - 70)) | (1 << (dtmath_grammarParser.SINGLE - 70)) | (1 << (dtmath_grammarParser.BIGNUMBER - 70)))) != 0)):
+            if not(((((_la - 70)) & ~0x3f) == 0 and ((1 << (_la - 70)) & 15) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
