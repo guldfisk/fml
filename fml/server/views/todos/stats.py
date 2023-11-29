@@ -14,11 +14,11 @@ from fml.server.session import SessionContainer as SC
 from fml.server.views.utils import DATETIME_FORMAT, inject_schema, with_errors
 
 
-todo_stat_views = Blueprint('todo_stat_views', __name__)
+todo_stat_views = Blueprint("todo_stat_views", __name__)
 request: APIRequest
 
 
-@todo_stat_views.route('/todo/burn-down/', methods = ['GET'])
+@todo_stat_views.route("/todo/burn-down/", methods=["GET"])
 @with_errors
 @inject_schema(schemas.StatsOptionsSchema())
 def todo_burn_down(
@@ -29,7 +29,9 @@ def todo_burn_down(
     ignore_priority: bool,
     last_n_days: int,
 ):
-    project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
+    project, level = get_project_and_minimum_priority(
+        SC.session, project, minimum_priority, ignore_priority
+    )
 
     todos = SC.session.query(models.ToDo)
 
@@ -51,7 +53,7 @@ def todo_burn_down(
 
     if not todos:
         return {
-            'points': [],
+            "points": [],
         }
 
     changes: t.List[t.Tuple[datetime.datetime, int]] = []
@@ -63,7 +65,7 @@ def todo_burn_down(
 
     changes.append((datetime.datetime.now(), 0))
 
-    changes = sorted(changes, key = lambda p: p[0])
+    changes = sorted(changes, key=lambda p: p[0])
 
     active = 0
     points = []
@@ -78,11 +80,11 @@ def todo_burn_down(
         )
 
     return {
-        'points': points[-last_n_days:],
+        "points": points[-last_n_days:],
     }
 
 
-@todo_stat_views.route('/todo/throughput/', methods = ['GET'])
+@todo_stat_views.route("/todo/throughput/", methods=["GET"])
 @with_errors
 @inject_schema(schemas.StatsOptionsSchema())
 def todo_throughput(
@@ -93,14 +95,22 @@ def todo_throughput(
     ignore_priority: bool,
     last_n_days: int,
 ):
-    project, level = get_project_and_minimum_priority(SC.session, project, minimum_priority, ignore_priority)
+    project, level = get_project_and_minimum_priority(
+        SC.session, project, minimum_priority, ignore_priority
+    )
 
-    todos = SC.session.query(models.ToDo.finished_at).filter(
-        models.ToDo.state == models.State.COMPLETED,
-    ).order_by(models.ToDo.finished_at)
+    todos = (
+        SC.session.query(models.ToDo.finished_at)
+        .filter(
+            models.ToDo.state == models.State.COMPLETED,
+        )
+        .order_by(models.ToDo.finished_at)
+    )
 
     if project is not None:
-        todos = todos.filter(models.ToDo.project_id == project.id, )
+        todos = todos.filter(
+            models.ToDo.project_id == project.id,
+        )
 
     if level is not None:
         todos = todos.join(models.Priority).filter(models.Priority.level <= level)
@@ -113,22 +123,15 @@ def todo_throughput(
             ~exists().where(models.Dependency.child_id == models.ToDo.id),
         )
 
-    finished_dates = [
-        v[0].date()
-        for v in
-        todos
-    ]
+    finished_dates = [v[0].date() for v in todos]
 
     if not finished_dates:
         return {
-            'points': [],
+            "points": [],
         }
 
     finished_dates_map = [
-        0
-        for _ in range(
-            (datetime.datetime.now().date() - finished_dates[0]).days + 1
-        )
+        0 for _ in range((datetime.datetime.now().date() - finished_dates[0]).days + 1)
     ]
 
     for finished_date in finished_dates:
@@ -136,17 +139,20 @@ def todo_throughput(
 
     series = pd.Series([0] + finished_dates_map)
 
-    smooth_points = list(series.ewm(halflife = 16).mean())[1:]
+    smooth_points = list(series.ewm(halflife=16).mean())[1:]
 
     points = [
         (
-            (finished_dates[0] + datetime.timedelta(days = idx)).strftime(DATETIME_FORMAT),
+            (finished_dates[0] + datetime.timedelta(days=idx)).strftime(
+                DATETIME_FORMAT
+            ),
             smooth_points[idx],
         )
-        for idx in
-        range(max(0, len(finished_dates_map) - last_n_days), len(finished_dates_map))
+        for idx in range(
+            max(0, len(finished_dates_map) - last_n_days), len(finished_dates_map)
+        )
     ]
 
     return {
-        'points': points,
+        "points": points,
     }

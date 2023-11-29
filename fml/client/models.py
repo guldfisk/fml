@@ -25,10 +25,7 @@ class RemoteModel(ABC):
         return hash((self.__class__, self.pk))
 
     def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, self.__class__)
-            and self.pk == other.pk
-        )
+        return isinstance(other, self.__class__) and self.pk == other.pk
 
 
 @dataclasses.dataclass
@@ -50,48 +47,58 @@ class Alarm(RemoteModel):
     @classmethod
     def from_remote(cls, remote: Serialized) -> Alarm:
         return cls(
-            pk = remote['id'],
-            text = remote['text'],
-            started_at = datetime.datetime.strptime(remote['started_at'], DATETIME_FORMAT),
-            end_at = datetime.datetime.strptime(remote['end_at'], DATETIME_FORMAT),
-            next_reminder_time_target = (
-                datetime.datetime.strptime(remote['next_reminder_time_target'], DATETIME_FORMAT)
-                if remote['next_reminder_time_target'] else
-                None
+            pk=remote["id"],
+            text=remote["text"],
+            started_at=datetime.datetime.strptime(
+                remote["started_at"], DATETIME_FORMAT
             ),
-            requires_acknowledgment = remote['requires_acknowledgment'],
-            send_email = remote['send_email'],
-            silent = remote['silent'],
-            level = remote['level'],
-            times_notified = remote['times_notified'],
-            acknowledged = remote['acknowledged'],
-            canceled = remote['canceled'],
-            success = remote['success'],
+            end_at=datetime.datetime.strptime(remote["end_at"], DATETIME_FORMAT),
+            next_reminder_time_target=(
+                datetime.datetime.strptime(
+                    remote["next_reminder_time_target"], DATETIME_FORMAT
+                )
+                if remote["next_reminder_time_target"]
+                else None
+            ),
+            requires_acknowledgment=remote["requires_acknowledgment"],
+            send_email=remote["send_email"],
+            silent=remote["silent"],
+            level=remote["level"],
+            times_notified=remote["times_notified"],
+            acknowledged=remote["acknowledged"],
+            canceled=remote["canceled"],
+            success=remote["success"],
         )
 
     @property
     def flags(self) -> t.Iterator[str]:
         if self.silent:
-            yield 'silent'
+            yield "silent"
         if self.send_email:
-            yield 'mail'
+            yield "mail"
         if self.requires_acknowledgment:
-            yield 'ack'
+            yield "ack"
 
     @property
     def status(self) -> str:
         if self.canceled:
-            return 'CANCELED'
-        if self.requires_acknowledgment and not self.acknowledged and self.times_notified:
-            return 'AWAITING_ACKNOWLEDGEMENT'
+            return "CANCELED"
         if (
-            self.requires_acknowledgment and self.acknowledged
-            or not self.requires_acknowledgment and self.times_notified
+            self.requires_acknowledgment
+            and not self.acknowledged
+            and self.times_notified
+        ):
+            return "AWAITING_ACKNOWLEDGEMENT"
+        if (
+            self.requires_acknowledgment
+            and self.acknowledged
+            or not self.requires_acknowledgment
+            and self.times_notified
         ):
             if self.success:
-                return 'COMPLETED'
-            return 'COMPLETED_LATE'
-        return 'PENDING'
+                return "COMPLETED"
+            return "COMPLETED_LATE"
+        return "PENDING"
 
     @property
     def next_target_time(self) -> datetime.datetime:
@@ -101,12 +108,16 @@ class Alarm(RemoteModel):
     def eta(self) -> str:
         eta = self.next_target_time - datetime.datetime.now()
         if eta.total_seconds() > 0:
-            return format_timedelta(eta) + (' (reminder)' if self.next_reminder_time_target else '')
-        return '-'
+            return format_timedelta(eta) + (
+                " (reminder)" if self.next_reminder_time_target else ""
+            )
+        return "-"
 
     @property
     def elapsed(self) -> datetime.timedelta:
-        return max(datetime.datetime.now() - self.started_at, datetime.timedelta(seconds = 0))
+        return max(
+            datetime.datetime.now() - self.started_at, datetime.timedelta(seconds=0)
+        )
 
     @property
     def duration(self) -> datetime.timedelta:
@@ -114,7 +125,6 @@ class Alarm(RemoteModel):
 
 
 class Project(RemoteModel):
-
     def __init__(
         self,
         pk: int,
@@ -152,16 +162,17 @@ class Project(RemoteModel):
     @classmethod
     def from_remote(cls, remote: Serialized) -> Project:
         return cls(
-            pk = remote['id'],
-            name = remote['name'],
-            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
-            is_default = remote['is_default'],
-            default_priority_filter = remote['default_priority_filter'],
+            pk=remote["id"],
+            name=remote["name"],
+            created_at=datetime.datetime.strptime(
+                remote["created_at"], DATETIME_FORMAT
+            ),
+            is_default=remote["is_default"],
+            default_priority_filter=remote["default_priority_filter"],
         )
 
 
 class Priority(RemoteModel):
-
     def __init__(
         self,
         pk: int,
@@ -205,17 +216,18 @@ class Priority(RemoteModel):
     @classmethod
     def from_remote(cls, remote: Serialized) -> Priority:
         return cls(
-            pk = remote['id'],
-            name = remote['name'],
-            project = remote['project'],
-            level = remote['level'],
-            is_default = remote['is_default'],
-            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
+            pk=remote["id"],
+            name=remote["name"],
+            project=remote["project"],
+            level=remote["level"],
+            is_default=remote["is_default"],
+            created_at=datetime.datetime.strptime(
+                remote["created_at"], DATETIME_FORMAT
+            ),
         )
 
 
 class Tag(RemoteModel):
-
     def __init__(
         self,
         pk: int,
@@ -241,14 +253,15 @@ class Tag(RemoteModel):
     @classmethod
     def from_remote(cls, remote: Serialized) -> Tag:
         return cls(
-            pk = remote['id'],
-            name = remote['name'],
-            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
+            pk=remote["id"],
+            name=remote["name"],
+            created_at=datetime.datetime.strptime(
+                remote["created_at"], DATETIME_FORMAT
+            ),
         )
 
 
 class ToDo(RemoteModel):
-
     def __init__(
         self,
         pk: int,
@@ -282,21 +295,27 @@ class ToDo(RemoteModel):
     @classmethod
     def from_remote(cls, remote: Serialized) -> ToDo:
         return cls(
-            pk = remote['id'],
-            text = remote['text'],
-            created_at = datetime.datetime.strptime(remote['created_at'], DATETIME_FORMAT),
-            finished_at = (
-                datetime.datetime.strptime(remote['finished_at'], DATETIME_FORMAT)
-                if remote['finished_at'] else
-                None
+            pk=remote["id"],
+            text=remote["text"],
+            created_at=datetime.datetime.strptime(
+                remote["created_at"], DATETIME_FORMAT
             ),
-            state = State[remote['state']],
-            tags = remote['tags'],
-            comments = remote['comments'],
-            project = remote['project'],
-            priority = Priority.from_remote(remote['priority']),
-            children = [cls.from_remote(child) for child in remote['children']] if 'children' in remote else None,
-            parents = [cls.from_remote(parent) for parent in remote['parents']] if 'parents' in remote else None,
+            finished_at=(
+                datetime.datetime.strptime(remote["finished_at"], DATETIME_FORMAT)
+                if remote["finished_at"]
+                else None
+            ),
+            state=State[remote["state"]],
+            tags=remote["tags"],
+            comments=remote["comments"],
+            project=remote["project"],
+            priority=Priority.from_remote(remote["priority"]),
+            children=[cls.from_remote(child) for child in remote["children"]]
+            if "children" in remote
+            else None,
+            parents=[cls.from_remote(parent) for parent in remote["parents"]]
+            if "parents" in remote
+            else None,
         )
 
     @property
@@ -347,7 +366,9 @@ class ToDo(RemoteModel):
 
     @property
     def elapsed(self) -> datetime.timedelta:
-        return max(datetime.datetime.now() - self._created_at, datetime.timedelta(seconds = 0))
+        return max(
+            datetime.datetime.now() - self._created_at, datetime.timedelta(seconds=0)
+        )
 
     @property
     def duration(self) -> datetime.timedelta:
@@ -355,7 +376,9 @@ class ToDo(RemoteModel):
 
     @property
     def time_since(self) -> t.Optional[datetime.timedelta]:
-        return (datetime.datetime.now() - self._finished_at) if self._finished_at else None
+        return (
+            (datetime.datetime.now() - self._finished_at) if self._finished_at else None
+        )
 
 
 @dataclasses.dataclass
@@ -373,19 +396,21 @@ class CIChecker(RemoteModel):
     @property
     def status(self) -> str:
         if self.canceled:
-            return 'CANCELED'
-        return 'PENDING'
+            return "CANCELED"
+        return "PENDING"
 
     @property
     def elapsed(self) -> datetime.timedelta:
-        return max(datetime.datetime.now() - self.started, datetime.timedelta(seconds = 0))
+        return max(
+            datetime.datetime.now() - self.started, datetime.timedelta(seconds=0)
+        )
 
     @classmethod
     def from_remote(cls, remote: Serialized) -> CIChecker:
         return cls(
-            run_id = remote['run_id'],
-            started = datetime.datetime.strptime(remote['started'], DATETIME_FORMAT),
-            timeout = datetime.datetime.strptime(remote['timeout'], DATETIME_FORMAT),
-            link = remote['link'],
-            canceled = remote['canceled'],
+            run_id=remote["run_id"],
+            started=datetime.datetime.strptime(remote["started"], DATETIME_FORMAT),
+            timeout=datetime.datetime.strptime(remote["timeout"], DATETIME_FORMAT),
+            link=remote["link"],
+            canceled=remote["canceled"],
         )

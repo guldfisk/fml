@@ -7,35 +7,42 @@ LOCAL_TIMEZONE = datetime.datetime.now(datetime.timezone.utc).astimezone().tzinf
 
 
 class RunStatus(dict):
-
     @property
     def finished(self) -> bool:
-        return self.get('result') not in ('UNKNOWN', 'RUNNING')
+        return self.get("result") not in ("UNKNOWN", "RUNNING")
 
     @property
     def succeeded(self) -> bool:
-        return self.get('result') == 'SUCCESS'
+        return self.get("result") == "SUCCESS"
 
 
 class CIRun(dict):
-    DT_FORMAT = '%Y-%m-%dT%H:%M:%S.%f%z'
+    DT_FORMAT = "%Y-%m-%dT%H:%M:%S.%f%z"
 
     @property
     def started_at(self) -> datetime.datetime:
-        return datetime.datetime.strptime(
-            self['startTime'],
-            self.DT_FORMAT,
-        ).astimezone(LOCAL_TIMEZONE).replace(tzinfo = None) if 'startTime' in self else datetime.datetime.now()
+        return (
+            datetime.datetime.strptime(
+                self["startTime"],
+                self.DT_FORMAT,
+            )
+            .astimezone(LOCAL_TIMEZONE)
+            .replace(tzinfo=None)
+            if "startTime" in self
+            else datetime.datetime.now()
+        )
 
     @property
     def ended_at(self) -> t.Optional[datetime.datetime]:
         return (
             datetime.datetime.strptime(
-                self['endTime'],
+                self["endTime"],
                 self.DT_FORMAT,
-            ).astimezone(LOCAL_TIMEZONE).replace(tzinfo = None)
-            if self.get('endTime') else
-            None
+            )
+            .astimezone(LOCAL_TIMEZONE)
+            .replace(tzinfo=None)
+            if self.get("endTime")
+            else None
         )
 
     @property
@@ -44,10 +51,10 @@ class CIRun(dict):
 
     @property
     def link(self) -> str:
-        return 'https://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
-            self['id'],
+        return "https://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline".format(
+            self["id"],
         )
 
     @property
     def name(self) -> str:
-        return self.get('name') or 'unknown'
+        return self.get("name") or "unknown"

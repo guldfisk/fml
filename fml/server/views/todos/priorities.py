@@ -14,11 +14,13 @@ from fml.server.session import SessionContainer as SC
 from fml.server.views.utils import inject_project, inject_schema, with_errors
 
 
-todo_priority_views = Blueprint('todo_priority_views', __name__, url_prefix = '/priorities')
+todo_priority_views = Blueprint(
+    "todo_priority_views", __name__, url_prefix="/priorities"
+)
 request: APIRequest
 
 
-@todo_priority_views.route('/', methods = ['POST'])
+@todo_priority_views.route("/", methods=["POST"])
 def create_priority():
     try:
         priority = schemas.PriorityCreateSchema().deserialize(request.data)
@@ -27,56 +29,54 @@ def create_priority():
 
     if priority.is_default:
         SC.session.query(models.Priority).filter(
-            project_id = priority.project_id,
-        ).update({models.Priority.is_default: False}, synchronize_session = False)
+            project_id=priority.project_id,
+        ).update({models.Priority.is_default: False}, synchronize_session=False)
 
     SC.session.add(priority)
 
     try:
         SC.session.commit()
     except IntegrityError:
-        return 'Invalid priority', status.HTTP_400_BAD_REQUEST
+        return "Invalid priority", status.HTTP_400_BAD_REQUEST
 
     return schemas.PrioritySchema().serialize(priority)
 
 
-@todo_priority_views.route('/', methods = ['GET'])
+@todo_priority_views.route("/", methods=["GET"])
 @inject_project()
 def priorities_list(project_id: int):
-    priorities = SC.session.query(models.Priority).filter(
-        models.Priority.project_id == project_id,
-    ).order_by(models.Priority.level.asc())
+    priorities = (
+        SC.session.query(models.Priority)
+        .filter(
+            models.Priority.project_id == project_id,
+        )
+        .order_by(models.Priority.level.asc())
+    )
 
     schema = schemas.PrioritySchema()
 
-    return {
-        'priorities': [
-            schema.serialize(tag)
-            for tag in
-            priorities
-        ]
-    }
+    return {"priorities": [schema.serialize(tag) for tag in priorities]}
 
 
-@todo_priority_views.route('/swap-levels', methods = ['PATCH'])
-@inject_project(use_args = False)
+@todo_priority_views.route("/swap-levels", methods=["PATCH"])
+@inject_project(use_args=False)
 def swap_levels(project_id: int):
     first = models.Priority.get_for_identifier_and_project(
-        session = SC.session,
-        project_id = project_id,
-        identifier = request.data.get('first'),
+        session=SC.session,
+        project_id=project_id,
+        identifier=request.data.get("first"),
     )
 
     second = models.Priority.get_for_identifier_and_project(
-        session = SC.session,
-        project_id = project_id,
-        identifier = request.data.get('second'),
+        session=SC.session,
+        project_id=project_id,
+        identifier=request.data.get("second"),
     )
 
     if first is None or second is None:
-        return 'invalid priority', status.HTTP_400_BAD_REQUEST
+        return "invalid priority", status.HTTP_400_BAD_REQUEST
 
-    SC.session.execute('SET CONSTRAINTS ALL DEFERRED')
+    SC.session.execute("SET CONSTRAINTS ALL DEFERRED")
 
     first.level, second.level = second.level, first.level
 
@@ -84,18 +84,12 @@ def swap_levels(project_id: int):
 
     schema = schemas.PrioritySchema()
 
-    return {
-        'priorities': [
-            schema.serialize(tag)
-            for tag in
-            (first, second)
-        ]
-    }
+    return {"priorities": [schema.serialize(tag) for tag in (first, second)]}
 
 
-@todo_priority_views.route('/modify', methods = ['PATCH'])
+@todo_priority_views.route("/modify", methods=["PATCH"])
 @with_errors
-@inject_schema(schemas.ModifyPrioritySchema(), use_args = False)
+@inject_schema(schemas.ModifyPrioritySchema(), use_args=False)
 def modify_priority_level(
     todo: t.Union[str, int],
     priority: t.Union[str, int],
@@ -105,13 +99,13 @@ def modify_priority_level(
     todo = get_todo_for_project_and_identifier(SC.session, todo, project)
 
     priority_id = models.Priority.get_for_identifier_and_project(
-        session = SC.session,
-        project_id = todo.project_id,
-        identifier = priority,
-        target = models.Priority.id,
+        session=SC.session,
+        project_id=todo.project_id,
+        identifier=priority,
+        target=models.Priority.id,
     )
     if priority_id is None:
-        return 'invalid priority', status.HTTP_400_BAD_REQUEST
+        return "invalid priority", status.HTTP_400_BAD_REQUEST
 
     todo.priority_id = priority_id
 

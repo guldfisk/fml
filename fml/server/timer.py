@@ -13,7 +13,6 @@ from fml import sound, notify
 
 
 class AlarmWorker(threading.Thread):
-
     def __init__(
         self,
         alarm_id: int,
@@ -36,7 +35,9 @@ class AlarmWorker(threading.Thread):
 
         session.commit()
 
-        canceled = self._stopped.wait((target_time - datetime.datetime.now()).total_seconds())
+        canceled = self._stopped.wait(
+            (target_time - datetime.datetime.now()).total_seconds()
+        )
 
         if not canceled:
             session: Session = ScopedSession()
@@ -45,22 +46,22 @@ class AlarmWorker(threading.Thread):
             if not alarm.canceled and not alarm.acknowledged:
                 missed_by = (datetime.datetime.now() - alarm.end_at).total_seconds()
 
-                success = missed_by < .5
+                success = missed_by < 0.5
 
-                body = '{notification_text} {time_text}'.format(
-                    notification_text = (
-                        'Re-notified (number {})'.format(alarm.times_notified)
-                        if alarm.times_notified else
-                        'Notified'
+                body = "{notification_text} {time_text}".format(
+                    notification_text=(
+                        "Re-notified (number {})".format(alarm.times_notified)
+                        if alarm.times_notified
+                        else "Notified"
                     ),
-                    time_text = (
-                        'on time'
-                        if success else
-                        'late by {} seconds'.format(round(missed_by, 1))
-                    )
+                    time_text=(
+                        "on time"
+                        if success
+                        else "late by {} seconds".format(round(missed_by, 1))
+                    ),
                 )
 
-                notify.notify(alarm.text, description = body)
+                notify.notify(alarm.text, description=body)
                 if not alarm.silent:
                     sound.ding_sync()
                 if alarm.send_email:
@@ -68,15 +69,10 @@ class AlarmWorker(threading.Thread):
 
                 session.query(Alarm).filter(Alarm.id == alarm.id).update(
                     {
-                        'times_notified': (Alarm.times_notified + 1),
-                        'next_reminder_time_target': datetime.datetime.now() + datetime.timedelta(
-                            seconds = alarm.retry_delay
-                        ),
-                        **(
-                            {'success': success}
-                            if alarm.times_notified <= 0 else
-                            {}
-                        )
+                        "times_notified": (Alarm.times_notified + 1),
+                        "next_reminder_time_target": datetime.datetime.now()
+                        + datetime.timedelta(seconds=alarm.retry_delay),
+                        **({"success": success} if alarm.times_notified <= 0 else {}),
                     }
                 )
 
@@ -90,19 +86,17 @@ class AlarmWorker(threading.Thread):
 
 
 class Checker(threading.Thread):
-
     def __init__(self, manager: AlarmManager):
         super().__init__()
         self._manager = manager
         self._canceled = threading.Event()
 
     def run(self) -> None:
-        while not self._canceled.wait(4*60):
+        while not self._canceled.wait(4 * 60):
             self._manager.check()
 
 
 class AlarmManager(object):
-
     def __init__(self):
         self._lock = threading.Lock()
         self._alarm_map: t.MutableMapping[int, AlarmWorker] = {}
@@ -123,8 +117,13 @@ class AlarmManager(object):
                 del self._alarm_map[worker.alarm_id]
             except KeyError:
                 pass
-        if not canceled and not alarm.canceled and alarm.requires_acknowledgment and not alarm.acknowledged:
-            self.handle_alarm(alarm_id = worker.alarm_id)
+        if (
+            not canceled
+            and not alarm.canceled
+            and alarm.requires_acknowledgment
+            and not alarm.acknowledged
+        ):
+            self.handle_alarm(alarm_id=worker.alarm_id)
 
     def check(self) -> None:
         session: Session = ScopedSession()
@@ -168,7 +167,9 @@ class AlarmManager(object):
 
         return alarm
 
-    def snooze(self, alarm_id, session: Session, new_target_time: datetime.datetime) -> t.Optional[Alarm]:
+    def snooze(
+        self, alarm_id, session: Session, new_target_time: datetime.datetime
+    ) -> t.Optional[Alarm]:
         alarm: Alarm = session.query(Alarm).get(alarm_id)
 
         if alarm is None or not (
@@ -206,14 +207,18 @@ class AlarmManager(object):
         return alarms
 
     def acknowledge_all(self, session: Session) -> t.Sequence[Alarm]:
-        alarms = session.query(Alarm).filter(
-            and_(
-                not_(Alarm.canceled),
-                Alarm.requires_acknowledgment,
-                not_(Alarm.acknowledged),
-                Alarm.end_at <= datetime.datetime.now()
+        alarms = (
+            session.query(Alarm)
+            .filter(
+                and_(
+                    not_(Alarm.canceled),
+                    Alarm.requires_acknowledgment,
+                    not_(Alarm.acknowledged),
+                    Alarm.end_at <= datetime.datetime.now(),
+                )
             )
-        ).all()
+            .all()
+        )
         for alarm in alarms:
             alarm.acknowledged = True
             session.add(alarm)

@@ -15,11 +15,11 @@ from fml.server.session import SessionContainer as SC
 from fml.server.views.utils import with_errors, inject_schema
 
 
-todo_tag_views = Blueprint('todo_tag_views', __name__)
+todo_tag_views = Blueprint("todo_tag_views", __name__)
 request: APIRequest
 
 
-@todo_tag_views.route('/tag/', methods = ['POST'])
+@todo_tag_views.route("/tag/", methods=["POST"])
 def create_tag():
     schema = schemas.TagSchema()
 
@@ -34,15 +34,20 @@ def create_tag():
         SC.session.commit()
     except IntegrityError:
         SC.session.rollback()
-        return 'Tag already exists', status.HTTP_400_BAD_REQUEST
+        return "Tag already exists", status.HTTP_400_BAD_REQUEST
 
     return schema.serialize(tag)
 
 
-@todo_tag_views.route('/todo/tag/', methods = ['POST'])
+@todo_tag_views.route("/todo/tag/", methods=["POST"])
 @with_errors
-@inject_schema(schemas.TaggedSchema(), use_args = False)
-def tag_todo(todo_target: t.Union[str, int], tag_target: models.Tag, project: models.Project, recursive: bool):
+@inject_schema(schemas.TaggedSchema(), use_args=False)
+def tag_todo(
+    todo_target: t.Union[str, int],
+    tag_target: models.Tag,
+    project: models.Project,
+    recursive: bool,
+):
     todo = get_todo_for_project_and_identifier(
         SC.session,
         todo_target,
@@ -59,21 +64,17 @@ def tag_todo(todo_target: t.Union[str, int], tag_target: models.Tag, project: mo
         SC.session.commit()
     except (IntegrityError, OperationalError):
         SC.session.rollback()
-        return 'Invalid args', status.HTTP_400_BAD_REQUEST
+        return "Invalid args", status.HTTP_400_BAD_REQUEST
 
     return schemas.ToDoSchema().serialize(todo), status.HTTP_201_CREATED
 
 
-@todo_tag_views.route('/tag/', methods = ['GET'])
+@todo_tag_views.route("/tag/", methods=["GET"])
 def tag_list():
-    tags: t.List[models.Tag] = SC.session.query(models.Tag).order_by(models.Tag.created_at.desc())
+    tags: t.List[models.Tag] = SC.session.query(models.Tag).order_by(
+        models.Tag.created_at.desc()
+    )
 
     schema = schemas.TagSchema()
 
-    return {
-        'tags': [
-            schema.serialize(tag)
-            for tag in
-            tags
-        ]
-    }
+    return {"tags": [schema.serialize(tag) for tag in tags]}

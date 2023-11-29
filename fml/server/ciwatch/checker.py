@@ -34,31 +34,35 @@ class CIChecker(threading.Thread):
 
     @property
     def link(self) -> str:
-        return 'https://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline'.format(
+        return "https://ci.uniid.it/blue/organizations/jenkins/unisport/detail/unisport/{}/pipeline".format(
             self._run_id,
         )
 
     def run(self) -> None:
         self._st = datetime.datetime.now()
         if self._timeout is None:
-            self._timeout = self._st + datetime.timedelta(hours = 1)
+            self._timeout = self._st + datetime.timedelta(hours=1)
         while True:
             if self._canceled.is_set():
                 self._callback(self._run_id, False)
                 return
             if datetime.datetime.now() > self._timeout:
-                notify.notify('Timed out checking CI run', str(self._run_id))
+                notify.notify("Timed out checking CI run", str(self._run_id))
                 self._callback(self._run_id, False)
                 return
             try:
                 status = self._client.get_run_status(self._run_id)
             except Exception as e:
-                notify.notify('Failed getting status for CI run {}'.format(self._run_id), str(e))
+                notify.notify(
+                    "Failed getting status for CI run {}".format(self._run_id), str(e)
+                )
                 self._callback(self._run_id, False)
                 return
             if status.finished:
                 notify.notify(
-                    'CI run finished: {}'.format('SUCCEEDED' if status.succeeded else 'FAILED'),
+                    "CI run finished: {}".format(
+                        "SUCCEEDED" if status.succeeded else "FAILED"
+                    ),
                     self.link,
                 )
                 self._callback(self._run_id, True)
@@ -67,9 +71,9 @@ class CIChecker(threading.Thread):
 
     def serialize(self) -> t.Mapping[str, t.Any]:
         return {
-            'run_id': self._run_id,
-            'started': self._st.strftime(DATETIME_FORMAT),
-            'timeout': self._timeout.strftime(DATETIME_FORMAT),
-            'link': self.link,
-            'canceled': self._canceled.is_set(),
+            "run_id": self._run_id,
+            "started": self._st.strftime(DATETIME_FORMAT),
+            "timeout": self._timeout.strftime(DATETIME_FORMAT),
+            "link": self.link,
+            "canceled": self._canceled.is_set(),
         }

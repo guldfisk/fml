@@ -10,7 +10,6 @@ from fml.client.client import Client
 
 
 class AlarmList(Widget):
-
     def __init__(self, name: t.Optional[str] = None) -> None:
         super().__init__(name)
         self._client = Client()
@@ -19,11 +18,7 @@ class AlarmList(Widget):
         self.set_interval(1, self.refresh)
 
     def render(self):
-        return Align.center(
-            output.print_alarms.get_table(
-                Client().active_alarms()
-            )
-        )
+        return Align.center(output.print_alarms.get_table(Client().active_alarms()))
 
 
 class TestApp(App):

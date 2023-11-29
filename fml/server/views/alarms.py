@@ -21,11 +21,11 @@ from fml.server.views.utils import inject_schema, with_errors
 from fml.sound import ding_sync
 
 
-alarm_views = Blueprint('alarm_views', __name__, url_prefix = '/alarms')
+alarm_views = Blueprint("alarm_views", __name__, url_prefix="/alarms")
 request: APIRequest
 
 
-@alarm_views.route('/', methods = ['POST'])
+@alarm_views.route("/", methods=["POST"])
 def create_alarm():
     schema = AlarmSchema()
 
@@ -34,8 +34,8 @@ def create_alarm():
     except DeserializationError as e:
         return e.serialized, status.HTTP_400_BAD_REQUEST
 
-    if alarm.end_at < datetime.datetime.now() - datetime.timedelta(seconds = 1):
-        return 'Alarm must finish in the future', status.HTTP_400_BAD_REQUEST
+    if alarm.end_at < datetime.datetime.now() - datetime.timedelta(seconds=1):
+        return "Alarm must finish in the future", status.HTTP_400_BAD_REQUEST
 
     SC.session.add(alarm)
 
@@ -46,34 +46,33 @@ def create_alarm():
     return schema.serialize(alarm)
 
 
-@alarm_views.route('/ding/', methods = ['POST'])
+@alarm_views.route("/ding/", methods=["POST"])
 def ding():
     ding_sync()
-    return {'status': 'ok'}
+    return {"status": "ok"}
 
 
-@alarm_views.route('/notify/', methods = ['POST'])
+@alarm_views.route("/notify/", methods=["POST"])
 @with_errors
 @inject_schema(
     Schema(
-        fields = {
-            'title': fields.Text(max = 61),
-            'description': fields.Text(
-                max = 127,
-                required = False,
-                default = '',
+        fields={
+            "title": fields.Text(max=61),
+            "description": fields.Text(
+                max=127,
+                required=False,
+                default="",
             ),
         }
     ),
-    use_args = False,
+    use_args=False,
 )
 def notify(title: str, description: str):
     _notify(title, description)
-    return {'status': 'ok'}
+    return {"status": "ok"}
 
 
 class BaseAlarmList(View):
-
     @abstractmethod
     def get_base_query(self) -> Query:
         pass
@@ -98,16 +97,14 @@ class BaseAlarmList(View):
         schema = AlarmSchema()
 
         return {
-            'alarms': [
+            "alarms": [
                 schema.serialize(alarm)
-                for alarm in
-                self.order_alarms(alarms).limit(limit)
+                for alarm in self.order_alarms(alarms).limit(limit)
             ]
         }
 
 
 class ViewAlarms(BaseAlarmList):
-
     def get_base_query(self) -> Query:
         return models.Alarm.active_alarms(SC.session)
 
@@ -115,11 +112,12 @@ class ViewAlarms(BaseAlarmList):
         return query.order_by(models.Alarm.end_at)
 
 
-alarm_views.add_url_rule('/', methods = ['GET'], view_func = ViewAlarms.as_view('view_alarms'))
+alarm_views.add_url_rule(
+    "/", methods=["GET"], view_func=ViewAlarms.as_view("view_alarms")
+)
 
 
 class AlarmHistory(BaseAlarmList):
-
     def get_base_query(self) -> Query:
         return SC.session.query(models.Alarm)
 
@@ -127,57 +125,49 @@ class AlarmHistory(BaseAlarmList):
         return query.order_by(models.Alarm.started_at.desc())
 
 
-alarm_views.add_url_rule('/history/', methods = ['GET'], view_func = AlarmHistory.as_view('alarm_history'))
+alarm_views.add_url_rule(
+    "/history/", methods=["GET"], view_func=AlarmHistory.as_view("alarm_history")
+)
 
 
-@alarm_views.route('/cancel/', methods = ['PATCH'])
+@alarm_views.route("/cancel/", methods=["PATCH"])
 @with_errors
-@inject_schema(schemas.UpdateAlarm(), use_args = False)
+@inject_schema(schemas.UpdateAlarm(), use_args=False)
 def cancel_alarm(target: models.Alarm):
-    return AlarmSchema().serialize(
-        MANAGER.cancel(target.id, SC.session)
-    )
+    return AlarmSchema().serialize(MANAGER.cancel(target.id, SC.session))
 
 
-@alarm_views.route('/acknowledge/', methods = ['PATCH'])
+@alarm_views.route("/acknowledge/", methods=["PATCH"])
 @with_errors
-@inject_schema(schemas.UpdateAlarm(), use_args = False)
+@inject_schema(schemas.UpdateAlarm(), use_args=False)
 def acknowledge_alarm(target: models.Alarm):
-    return AlarmSchema().serialize(
-        MANAGER.acknowledge(target.id, SC.session)
-    )
+    return AlarmSchema().serialize(MANAGER.acknowledge(target.id, SC.session))
 
 
-@alarm_views.route('/snooze/', methods = ['PATCH'])
+@alarm_views.route("/snooze/", methods=["PATCH"])
 @with_errors
-@inject_schema(schemas.SnoozeAlarm(), use_args = False)
+@inject_schema(schemas.SnoozeAlarm(), use_args=False)
 def snooze_alarm(target: models.Alarm, new_target_time: datetime.datetime):
     return AlarmSchema().serialize(
         MANAGER.snooze(target.id, SC.session, new_target_time)
     )
 
 
-@alarm_views.route('/cancel/', methods = ['PATCH'])
+@alarm_views.route("/cancel/", methods=["PATCH"])
 def cancel_alarms():
     schema = AlarmSchema()
 
     return {
-        'alarms': [
-            schema.serialize(alarm)
-            for alarm in
-            MANAGER.cancel_all(SC.session)
-        ]
+        "alarms": [schema.serialize(alarm) for alarm in MANAGER.cancel_all(SC.session)]
     }
 
 
-@alarm_views.route('/acknowledge/all/', methods = ['PATCH'])
+@alarm_views.route("/acknowledge/all/", methods=["PATCH"])
 def acknowledge_alarms():
     schema = AlarmSchema()
 
     return {
-        'alarms': [
-            schema.serialize(alarm)
-            for alarm in
-            MANAGER.acknowledge_all(SC.session)
+        "alarms": [
+            schema.serialize(alarm) for alarm in MANAGER.acknowledge_all(SC.session)
         ]
     }

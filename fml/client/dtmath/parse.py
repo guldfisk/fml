@@ -14,26 +14,22 @@ class DTMParseException(Exception):
 
 
 class SearchPatternParseListener(ErrorListener):
-
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        raise DTMParseException('Syntax error')
+        raise DTMParseException("Syntax error")
 
-    def reportContextSensitivity(self, recognizer, dfa, startIndex, stopIndex, prediction, configs):
-        raise DTMParseException('Conetext sensitivity')
+    def reportContextSensitivity(
+        self, recognizer, dfa, startIndex, stopIndex, prediction, configs
+    ):
+        raise DTMParseException("Conetext sensitivity")
 
 
 class DTMParser(object):
-
     def __init__(self):
         self._visitor = DTMVisitor()
 
     def parse(self, s: str) -> t.Union[datetime.datetime, datetime.timedelta]:
         parser = dtmath_grammarParser(
-            CommonTokenStream(
-                dtmath_grammarLexer(
-                    InputStream(s)
-                )
-            )
+            CommonTokenStream(dtmath_grammarLexer(InputStream(s)))
         )
 
         parser._listeners = [SearchPatternParseListener()]

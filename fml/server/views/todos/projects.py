@@ -17,11 +17,11 @@ from fml.server.session import SessionContainer as SC
 from fml.server.views.utils import inject_schema
 
 
-todo_project_views = Blueprint('todo_project_views', __name__)
+todo_project_views = Blueprint("todo_project_views", __name__)
 request: APIRequest
 
 
-@todo_project_views.route('/project/', methods = ['POST'])
+@todo_project_views.route("/project/", methods=["POST"])
 def create_project():
     schema = schemas.ProjectSchema()
 
@@ -31,7 +31,9 @@ def create_project():
         return e.serialized, status.HTTP_400_BAD_REQUEST
 
     if project.is_default:
-        SC.session.query(models.Project).update({models.Project.is_default: False}, synchronize_session = False)
+        SC.session.query(models.Project).update(
+            {models.Project.is_default: False}, synchronize_session=False
+        )
 
     SC.session.add(project)
 
@@ -39,43 +41,43 @@ def create_project():
         SC.session.commit()
     except IntegrityError:
         SC.session.rollback()
-        return 'Project already exists', status.HTTP_400_BAD_REQUEST
+        return "Project already exists", status.HTTP_400_BAD_REQUEST
 
     return schema.serialize(project)
 
 
-@todo_project_views.route('/project/', methods = ['PATCH'])
+@todo_project_views.route("/project/", methods=["PATCH"])
 @inject_schema(
     Schema(
         {
-            'project': StringIdentifiedField(models.Project),
-            'default_priority_filter': fields.CoalesceField(
+            "project": StringIdentifiedField(models.Project),
+            "default_priority_filter": fields.CoalesceField(
                 [fields.Integer(), fields.Text()],
-                default = None,
-                required = False,
+                default=None,
+                required=False,
             ),
         }
     ),
-    use_args = False,
+    use_args=False,
 )
-def modify_project(project: models.Project, default_priority_filter: t.Union[int, str, None]):
+def modify_project(
+    project: models.Project, default_priority_filter: t.Union[int, str, None]
+):
     if default_priority_filter is not None:
-        default_priority_filter = get_priority_level(SC.session, default_priority_filter, project)
+        default_priority_filter = get_priority_level(
+            SC.session, default_priority_filter, project
+        )
     project.default_priority_filter = default_priority_filter
     SC.session.commit()
     return schemas.ProjectSchema().serialize(project)
 
 
-@todo_project_views.route('/project/', methods = ['GET'])
+@todo_project_views.route("/project/", methods=["GET"])
 def project_list():
-    projects: t.List[models.ToDo] = SC.session.query(models.Project).order_by(models.Project.created_at.desc())
+    projects: t.List[models.ToDo] = SC.session.query(models.Project).order_by(
+        models.Project.created_at.desc()
+    )
 
     schema = schemas.ProjectSchema()
 
-    return {
-        'projects': [
-            schema.serialize(project)
-            for project in
-            projects
-        ]
-    }
+    return {"projects": [schema.serialize(project) for project in projects]}

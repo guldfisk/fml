@@ -6,7 +6,6 @@ from fml.server.ciwatch.checker import CIChecker
 
 
 class CIWatchManager(object):
-
     def __init__(self):
         self._watching: t.MutableMapping[str, CIChecker] = {}
         self._lock = threading.Lock()
@@ -20,7 +19,9 @@ class CIWatchManager(object):
 
     def watching(self) -> t.Sequence[CIChecker]:
         with self._lock:
-            return sorted(self._watching.values(), key = lambda v: v.started_at, reverse = True)
+            return sorted(
+                self._watching.values(), key=lambda v: v.started_at, reverse=True
+            )
 
     def watch(
         self,
@@ -41,8 +42,8 @@ class CIWatchManager(object):
                     cookie_name,
                     cookie_value,
                     run_id,
-                    timeout = timeout,
-                    callback = self._on_completed,
+                    timeout=timeout,
+                    callback=self._on_completed,
                 )
                 self._watching[run_id] = checker
                 checker.start()

@@ -8,65 +8,65 @@ from fml.server import fields as custom_fields
 
 
 class AlarmSchema(Schema[models.Alarm]):
-    id = fields.Integer(read_only = True)
+    id = fields.Integer(read_only=True)
 
     text = fields.Text()
 
-    started_at = fields.Datetime(read_only = True)
+    started_at = fields.Datetime(read_only=True)
     end_at = fields.Datetime()
-    next_reminder_time_target = fields.Datetime(required = False, read_only = True)
+    next_reminder_time_target = fields.Datetime(required=False, read_only=True)
 
-    requires_acknowledgment = fields.Bool(required = False)
-    retry_delay = fields.Integer(required = False, min = 5)
-    send_email = fields.Bool(required = False)
-    silent = fields.Bool(required = False)
-    level = fields.Enum(models.ImportanceLevel, required = False)
+    requires_acknowledgment = fields.Bool(required=False)
+    retry_delay = fields.Integer(required=False, min=5)
+    send_email = fields.Bool(required=False)
+    silent = fields.Bool(required=False)
+    level = fields.Enum(models.ImportanceLevel, required=False)
 
-    times_notified = fields.Integer(read_only = True)
-    acknowledged = fields.Bool(read_only = True)
+    times_notified = fields.Integer(read_only=True)
+    acknowledged = fields.Bool(read_only=True)
 
-    canceled = fields.Bool(read_only = True)
-    success = fields.Bool(read_only = True)
+    canceled = fields.Bool(read_only=True)
+    success = fields.Bool(read_only=True)
 
 
 class ProjectSchema(Schema[models.Project]):
-    id = fields.Integer(read_only = True)
-    name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
-    created_at = fields.Datetime(read_only = True)
-    is_default = fields.Bool(default = False)
-    default_priority_filter = fields.Integer(default = None, required = False)
+    id = fields.Integer(read_only=True)
+    name = fields.Text(min=1, max=127, pattern=re.compile(r"\w+"))
+    created_at = fields.Datetime(read_only=True)
+    is_default = fields.Bool(default=False)
+    default_priority_filter = fields.Integer(default=None, required=False)
 
 
 class TaggedSchema(Schema[models.Tagged]):
     todo_target = fields.CoalesceField([fields.Integer(), fields.Text()])
     tag_target = custom_fields.StringIdentifiedField(models.Tag)
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
-    recursive = fields.Bool(default = False, write_only = True)
+    project = custom_fields.StringIdentifiedField(models.Project, default=None)
+    recursive = fields.Bool(default=False, write_only=True)
 
 
 class CommentSchema(Schema):
     target = fields.CoalesceField([fields.Integer(), fields.Text()])
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = custom_fields.StringIdentifiedField(models.Project, default=None)
     comment = fields.Text()
 
 
 class TagSchema(Schema[models.Tag]):
-    id = fields.Integer(read_only = True)
-    name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
-    created_at = fields.Datetime(read_only = True)
+    id = fields.Integer(read_only=True)
+    name = fields.Text(min=1, max=127, pattern=re.compile(r"\w+"))
+    created_at = fields.Datetime(read_only=True)
 
 
 class PrioritySchema(Schema[models.Priority]):
-    id = fields.Integer(read_only = True)
-    name = fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+'))
-    created_at = fields.Datetime(read_only = True)
+    id = fields.Integer(read_only=True)
+    name = fields.Text(min=1, max=127, pattern=re.compile(r"\w+"))
+    created_at = fields.Datetime(read_only=True)
     level = fields.Integer()
     project = fields.Lambda(lambda p: p.project.name)
-    is_default = fields.Bool(default = False)
+    is_default = fields.Bool(default=False)
 
 
 class PriorityCreateSchema(PrioritySchema):
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = custom_fields.StringIdentifiedField(models.Project, default=None)
 
 
 class CreateTodoSchema(Schema):
@@ -74,17 +74,17 @@ class CreateTodoSchema(Schema):
         fields.CoalesceField(
             [
                 fields.Integer(),
-                fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+')),
+                fields.Text(min=1, max=127, pattern=re.compile(r"\w+")),
             ]
         ),
-        default = (),
+        default=(),
     )
     project = fields.CoalesceField(
         [
             fields.Integer(),
-            fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+')),
+            fields.Text(min=1, max=127, pattern=re.compile(r"\w+")),
         ],
-        required = False,
+        required=False,
     )
     parents = fields.List(
         fields.CoalesceField(
@@ -93,63 +93,73 @@ class CreateTodoSchema(Schema):
                 fields.Text(),
             ]
         ),
-        default = (),
+        default=(),
     )
     priority = fields.CoalesceField(
         [
             fields.Integer(),
-            fields.Text(min = 1, max = 127, pattern = re.compile(r'\w+')),
+            fields.Text(min=1, max=127, pattern=re.compile(r"\w+")),
         ],
-        required = False,
+        required=False,
     )
 
 
 class UpdateTodoSchema(Schema):
     target = fields.CoalesceField([fields.Integer(), fields.Text()])
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = custom_fields.StringIdentifiedField(models.Project, default=None)
 
 
 class UpdateDependencySchema(Schema):
-    parent = custom_fields.StringIdentifiedField(models.ToDo, base_query_getter = lambda s: models.ToDo.active_todos(s))
-    child = custom_fields.StringIdentifiedField(models.ToDo, base_query_getter = lambda s: models.ToDo.active_todos(s))
+    parent = custom_fields.StringIdentifiedField(
+        models.ToDo, base_query_getter=lambda s: models.ToDo.active_todos(s)
+    )
+    child = custom_fields.StringIdentifiedField(
+        models.ToDo, base_query_getter=lambda s: models.ToDo.active_todos(s)
+    )
 
 
 class ToDoListOptions(Schema):
-    project = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
-    tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
-    query = fields.Text(default = '')
-    all_tasks = fields.Bool(default = False)
-    flat = fields.Bool(default = False)
-    limit = fields.Integer(default = 25)
-    ignore_priority = fields.Bool(default = False)
-    minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
-    state = fields.Enum(models.State, soft_match = True, required = False, default = None)
+    project = fields.CoalesceField(
+        [fields.Integer(), fields.Text()], default=None, required=False
+    )
+    tag = custom_fields.StringIdentifiedField(models.Tag, default=None, required=False)
+    query = fields.Text(default="")
+    all_tasks = fields.Bool(default=False)
+    flat = fields.Bool(default=False)
+    limit = fields.Integer(default=25)
+    ignore_priority = fields.Bool(default=False)
+    minimum_priority = fields.CoalesceField(
+        [fields.Integer(), fields.Text()], default=None, required=False
+    )
+    state = fields.Enum(models.State, soft_match=True, required=False, default=None)
     order_by = fields.List(
         fields.MultiChoiceField(
             {
-                'created_at',
-                'finished_at',
-                'state',
-                'priority',
-                'project',
+                "created_at",
+                "finished_at",
+                "state",
+                "priority",
+                "project",
             },
-            soft_match = True,
+            soft_match=True,
         ),
-        required = False,
-        default = None,
+        required=False,
+        default=None,
     )
 
 
 class AlarmListOptions(Schema):
-    limit = fields.Integer(default = 25)
-    query = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
+    limit = fields.Integer(default=25)
+    query = fields.CoalesceField(
+        [fields.Integer(), fields.Text()], default=None, required=False
+    )
 
 
 class UpdateAlarm(Schema):
     target = custom_fields.StringIdentifiedOrRaiseField(
         models.Alarm,
         AlarmSchema(),
-        base_query_getter = lambda s: models.Alarm.active_alarms(s),
+        base_query_getter=lambda s: models.Alarm.active_alarms(s),
     )
 
 
@@ -158,7 +168,7 @@ class SnoozeAlarm(UpdateAlarm):
 
 
 class ToDoSchema(Schema[models.ToDo]):
-    id = fields.Integer(read_only = True)
+    id = fields.Integer(read_only=True)
 
     text = fields.Text()
 
@@ -166,33 +176,39 @@ class ToDoSchema(Schema[models.ToDo]):
     comments = fields.Lambda(lambda todo: [comment.text for comment in todo.comments])
     project = fields.Lambda(lambda todo: todo.project.name)
 
-    priority = fields.Related(PrioritySchema(), read_only = True)
+    priority = fields.Related(PrioritySchema(), read_only=True)
 
-    created_at = fields.Datetime(read_only = True)
-    finished_at = fields.Datetime(read_only = True)
+    created_at = fields.Datetime(read_only=True)
+    finished_at = fields.Datetime(read_only=True)
 
-    state = fields.Enum(models.State, read_only = True)
+    state = fields.Enum(models.State, read_only=True)
 
-    children = fields.List(fields.SelfRelated(), read_only = True, source = 'active_children')
+    children = fields.List(
+        fields.SelfRelated(), read_only=True, source="active_children"
+    )
 
 
 class ModifyPrioritySchema(Schema[models.Tagged]):
     todo = fields.CoalesceField([fields.Integer(), fields.Text()])
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = custom_fields.StringIdentifiedField(models.Project, default=None)
     priority = fields.CoalesceField([fields.Integer(), fields.Text()])
-    recursive = fields.Bool(default = False, write_only = True)
+    recursive = fields.Bool(default=False, write_only=True)
 
 
 class ModifyToDoSchema(Schema):
     target = fields.CoalesceField([fields.Integer(), fields.Text()])
-    project = custom_fields.StringIdentifiedField(models.Project, default = None)
+    project = custom_fields.StringIdentifiedField(models.Project, default=None)
     description = fields.Text()
 
 
 class StatsOptionsSchema(Schema):
-    project = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
-    tag = custom_fields.StringIdentifiedField(models.Tag, default = None, required = False)
-    top_level_only = fields.Bool(default = True)
-    ignore_priority = fields.Bool(default = False)
-    minimum_priority = fields.CoalesceField([fields.Integer(), fields.Text()], default = None, required = False)
-    last_n_days = fields.Integer(default = 128)
+    project = fields.CoalesceField(
+        [fields.Integer(), fields.Text()], default=None, required=False
+    )
+    tag = custom_fields.StringIdentifiedField(models.Tag, default=None, required=False)
+    top_level_only = fields.Bool(default=True)
+    ignore_priority = fields.Bool(default=False)
+    minimum_priority = fields.CoalesceField(
+        [fields.Integer(), fields.Text()], default=None, required=False
+    )
+    last_n_days = fields.Integer(default=128)
