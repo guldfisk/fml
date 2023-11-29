@@ -89,6 +89,18 @@ class AlarmWorker(threading.Thread):
         self._stopped.set()
 
 
+class Checker(threading.Thread):
+
+    def __init__(self, manager: AlarmManager):
+        super().__init__()
+        self._manager = manager
+        self._canceled = threading.Event()
+
+    def run(self) -> None:
+        while not self._canceled.wait(4*60):
+            self._manager.check()
+
+
 class AlarmManager(object):
 
     def __init__(self):
@@ -116,8 +128,10 @@ class AlarmManager(object):
 
     def check(self) -> None:
         session: Session = ScopedSession()
-        for alarm_id in Alarm.active_alarms(session, target = Alarm.id).all():
-            self.handle_alarm(alarm_id)
+        now = datetime.datetime.now()
+        for alarm in Alarm.active_alarms(session).all():
+            if alarm.next_target_time - now < datetime.timedelta(minutes=5):
+                self.handle_alarm(alarm.id)
 
     def cancel(self, alarm_id: int, session: Session) -> t.Optional[Alarm]:
         alarm = Alarm.active_alarms(session).filter(Alarm.id == alarm_id).scalar()
