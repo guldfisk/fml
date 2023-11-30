@@ -355,10 +355,8 @@ def show_points(
     plt.xlabel("Date")
     plt.ylabel(y_label)
     plt.ylim(0, max(values) * 1.1)
-    plt.canvas_color("iron")
-    plt.axes_color("cloud")
     plt.grid(False, True)
-
+    plt.theme("dark")
     plt.show()
 
 

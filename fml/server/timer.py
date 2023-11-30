@@ -92,7 +92,7 @@ class Checker(threading.Thread):
         self._canceled = threading.Event()
 
     def run(self) -> None:
-        while not self._canceled.wait(4 * 60):
+        while not self._canceled.wait(60):
             self._manager.check()
 
 
@@ -129,7 +129,7 @@ class AlarmManager(object):
         session: Session = ScopedSession()
         now = datetime.datetime.now()
         for alarm in Alarm.active_alarms(session).all():
-            if alarm.next_target_time - now < datetime.timedelta(minutes=5):
+            if alarm.next_target_time - now < datetime.timedelta(minutes=2):
                 self.handle_alarm(alarm.id)
 
     def cancel(self, alarm_id: int, session: Session) -> t.Optional[Alarm]:
