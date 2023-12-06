@@ -325,6 +325,25 @@ class Client(object):
             )
         )
 
+    def delete_todo(
+        self,
+        todo: t.Union[str, int],
+        project: t.Union[str, int, None] = None,
+        force: bool = False,
+        recursive: bool = False,
+    ) -> t.Sequence[models.ToDo]:
+        return [
+            models.ToDo.from_remote(todo)
+            for todo in self._make_request(
+                "todo/",
+                "DELETE",
+                target=todo,
+                project=project,
+                force=force,
+                recursive=recursive,
+            )["deleted"]
+        ]
+
     def new_priority(
         self,
         name: str,

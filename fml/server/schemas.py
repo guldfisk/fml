@@ -109,6 +109,11 @@ class UpdateTodoSchema(Schema):
     project = custom_fields.StringIdentifiedField(models.Project, default=None)
 
 
+class DeleteTodoSchema(UpdateTodoSchema):
+    force = fields.Bool(default=False)
+    recursive = fields.Bool(default=False)
+
+
 class UpdateDependencySchema(Schema):
     parent = custom_fields.StringIdentifiedField(
         models.ToDo, base_query_getter=lambda s: models.ToDo.active_todos(s)

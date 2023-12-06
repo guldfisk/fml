@@ -1,5 +1,6 @@
 import copy
 import datetime
+import itertools
 import typing as t
 from abc import abstractmethod
 
@@ -11,6 +12,7 @@ from flask.views import View
 from flask_api import status
 from flask_api.request import APIRequest
 
+from fml.server.exceptions import SimpleError
 from hardcandy import fields
 from hardcandy.schema import DeserializationError, Field
 
@@ -161,6 +163,40 @@ def get_todo(target: t.Union[int, str], project: models.Project):
     return ToDoSchema().serialize(
         get_todo_for_project_and_identifier(SC.session, target, project)
     )
+
+
+@todo_cud_views.route("/todo/", methods=["DELETE"])
+@with_errors
+@inject_schema(schemas.DeleteTodoSchema())
+def delete_todo(
+    target: t.Union[int, str], project: models.Project, force: bool, recursive: bool
+):
+    todo = get_todo_for_project_and_identifier(
+        SC.session, target, project, active_only=False
+    )
+
+    if todo.children:
+        if not recursive:
+            raise SimpleError(
+                "Cannot delete todo with children. Specify -r to delete recursively."
+            )
+
+    serialized = []
+
+    for to_delete in itertools.chain(
+        reversed(list(todo.traverse_children(active_only=False))), (todo,)
+    ):
+        if (
+            not force
+            and to_delete.created_at
+            < datetime.datetime.now() - datetime.timedelta(minutes=5)
+        ):
+            raise SimpleError("Todo too old to delete. Specify -f to delete anyways.")
+        serialized.append(ToDoSchema().serialize(to_delete))
+        SC.session.delete(to_delete)
+    SC.session.commit()
+
+    return {"deleted": serialized}
 
 
 class BaseToDoList(View):

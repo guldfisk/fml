@@ -62,6 +62,40 @@ def new_todo(
     )
 
 
+@todo_service.command(name="delete")
+@split_text_option("text")
+@click.option("--project", "-p", type=str, help="Project.")
+@click.option(
+    "--force",
+    "-f",
+    default=False,
+    type=bool,
+    is_flag=True,
+    show_default=True,
+    help="Allow deletion of old todos.",
+)
+@click.option(
+    "--recursive",
+    "-r",
+    default=False,
+    type=bool,
+    is_flag=True,
+    show_default=True,
+    help="Delete children recursively.",
+)
+def delete_todo(
+    text: t.Sequence[str],
+    project: t.Optional[str],
+    force: bool,
+    recursive: bool,
+) -> None:
+    """Delete todos (irreversible)."""
+    output.print_todos(
+        Client().delete_todo(" ".join(text), project, force=force, recursive=recursive),
+        title="Deleted todos",
+    )
+
+
 @todo_service.command(name="modify")
 @click.argument("todo", type=str, required=True)
 @click.argument("description", type=str, required=False)

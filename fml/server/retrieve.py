@@ -11,6 +11,7 @@ def get_todo_for_project_and_identifier(
     session: Session,
     identifier: t.Union[str, int],
     project: models.Project,
+    active_only: bool = True,
 ) -> models.ToDo:
     if identifier == "l":
         todo = (
@@ -30,9 +31,11 @@ def get_todo_for_project_and_identifier(
     todos = models.ToDo.get_list_for_identifier(
         session=session,
         identifier=identifier,
-        base_query=models.ToDo.active_todos(session).filter(
-            models.ToDo.project_id == project.id
-        ),
+        base_query=(
+            models.ToDo.active_todos(session)
+            if active_only
+            else session.query(models.ToDo)
+        ).filter(models.ToDo.project_id == project.id),
     )
     if not todos:
         raise SimpleError("invalid todo")
